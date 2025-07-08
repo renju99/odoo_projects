@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Email Template for Maintenance Reminder -->
+    <record id="email_template_maintenance_reminder" model="mail.template">
+        <field name="name">Maintenance Reminder</field>
+        <field name="model_id" ref="model_asset_maintenance_schedule"/>
+        <field name="subject">Reminder: Upcoming Maintenance for Asset</field>
+        <field name="body_html">
+            <![CDATA[
+            <p>Dear User,</p>
+            <p>This is a reminder that the maintenance for the asset <strong>${object.asset_id.name}</strong> is scheduled for <strong>${object.maintenance_date}</strong>.</p>
+            <p>Please ensure that the maintenance is completed on time.</p>
+            <p>Best Regards,<br/>Facility Management Team</p>
+            ]]>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ACTIONS -->
+    <record id="action_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">facilities.facility</field>
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+
+    <record id="action_asset" model="ir.actions.act_window">
+        <field name="name">Assets</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+
+    <record id="action_asset_category" model="ir.actions.act_window">
+        <field name="name">Asset Categories</field>
+        <field name="res_model">facilities.asset.category</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_maintenance_schedule" model="ir.actions.act_window">
+        <field name="name">Maintenance Schedules</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">tree,form,calendar</field>
+    </record>
+
+    <!-- MAIN MENU STRUCTURE -->
+    <menuitem id="menu_facilities_root" name="Facility Management" sequence="10"/>
+
+    <!-- Maintenance as direct child of Facility Management -->
+    <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
+
+    <!-- FACILITY MANAGEMENT -->
+    <menuitem id="menu_facility_records" name="Facilities" parent="menu_facilities_root" action="action_facility" sequence="10"/>
+
+    <!-- ASSET MANAGEMENT -->
+    <menuitem id="menu_asset_management" name="Asset Management" parent="menu_facilities_root" sequence="15"/>
+    <menuitem id="menu_asset_list" name="Assets" parent="menu_asset_management" action="action_asset" sequence="10"/>
+    <menuitem id="menu_asset_categories" name="Categories" parent="menu_asset_management" action="action_asset_category" sequence="20"/>
+
+    <!-- MAINTENANCE ITEMS -->
+    <menuitem id="menu_maintenance_schedule"
+             name="Schedules"
+             parent="menu_maintenance"
+             action="action_maintenance_schedule"
+             sequence="10"/>
+</odoo>

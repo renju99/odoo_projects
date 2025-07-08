@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_maintenance_schedule_calendar" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.calendar</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <calendar date_start="maintenance_date"
+                      color="asset_id"
+                      string="Maintenance Calendar">
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+            </calendar>
+        </field>
+    </record>
+</odoo>

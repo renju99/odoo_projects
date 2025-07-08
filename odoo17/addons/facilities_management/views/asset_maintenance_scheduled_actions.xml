@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Scheduled Action for Maintenance Reminder -->
+    <record id="ir_cron_maintenance_reminder" model="ir.cron">
+        <field name="name">Maintenance Schedule Reminder</field>
+        <field name="model_id" ref="model_asset_maintenance_schedule"/>
+        <field name="state">code</field>
+        <field name="code">
+            model.send_maintenance_reminder()
+        </field>
+        <field name="user_id" ref="base.user_admin"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>  <!-- -1 means it will run indefinitely -->
+    </record>
+</odoo>

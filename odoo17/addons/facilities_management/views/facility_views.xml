@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_facility_tree" model="ir.ui.view">
+        <field name="name">facility.tree</field>
+        <field name="model">facilities.facility</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="manager_id"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_facility_form" model="ir.ui.view">
+        <field name="name">facility.form</field>
+        <field name="model">facilities.facility</field>
+        <field name="arch" type="xml">
+            <form string="Facility">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="manager_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">facilities.facility</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>
