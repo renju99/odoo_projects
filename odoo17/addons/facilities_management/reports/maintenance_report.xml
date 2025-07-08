@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_asset_maintenance" model="ir.actions.report">
+        <field name="name">Asset Maintenance Report</field>
+        <field name="model">facilities.asset</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">facilities_management.report_asset_maintenance_template</field>
+        <field name="report_file">facilities_management.report_asset_maintenance_template</field>
+        <field name="print_report_name">'Maintenance Report - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="facilities_management.model_facilities_asset"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_asset_maintenance_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Maintenance Report for <span t-field="o.name"/></h2>
+                        <div class="row mt32 mb32">
+                            <div class="col-6">
+                                <strong>Asset Name:</strong> <span t-field="o.name"/><br/>
+                                <strong>Asset Tag:</strong> <span t-field="o.asset_tag"/><br/>
+                                <strong>Serial Number:</strong> <span t-field="o.serial_number"/><br/>
+                                <strong>Category:</strong> <span t-field="o.category_id.name"/><br/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Facility:</strong> <span t-field="o.facility_id.name"/><br/>
+                                <strong>Responsible Person:</strong> <span t-field="o.responsible_id.name"/><br/>
+                                <strong>Condition:</strong> <span t-field="o.condition"/><br/>
+                                <strong>Location:</strong> <span t-field="o.location"/><br/>
+                            </div>
+                        </div>
+
+                        <h3>Maintenance History</h3>
+                        <table class="table table-sm mt-4">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Cost</th>
+                                    <th>Performed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.maintenance_ids" t-as="maintenance">
+                                    <td><span t-field="maintenance.maintenance_date"/></td>
+                                    <td><span t-field="maintenance.maintenance_type"/></td>
+                                    <td><span t-field="maintenance.description"/></td>
+                                    <td><span t-field="maintenance.cost"/></td>
+                                    <td><span t-field="maintenance.performed_by.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-if="not o.maintenance_ids">No maintenance records found for this asset.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

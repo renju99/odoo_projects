@@ -1,0 +1,10 @@
+<odoo>
+    <record id="ir_cron_advanced_maintenance" model="ir.cron">
+        <field name="name">Advanced Maintenance Checks</field>
+        <field name="model_id" ref="model_asset_maintenance_schedule"/>
+        <field name="state">code</field>
+        <field name="code">model.run_predictive_maintenance()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+    </record>
+</odoo>
