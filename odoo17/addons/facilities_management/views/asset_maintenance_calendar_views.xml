@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="view_maintenance_schedule_calendar" model="ir.ui.view">
         <field name="name">asset.maintenance.schedule.calendar</field>
@@ -13,4 +12,18 @@
             </calendar>
         </field>
     </record>
+
+    <record id="action_maintenance_calendar" model="ir.actions.act_window">
+        <field name="name">Maintenance Calendar</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Plan your asset maintenance schedules
+            </p><p>
+                Organize and visualize maintenance tasks on a calendar.
+            </p>
+        </field>
+    </record>
+
 </odoo>

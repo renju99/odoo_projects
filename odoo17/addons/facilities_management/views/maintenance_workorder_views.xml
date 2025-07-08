@@ -1,4 +1,3 @@
-<!-- views/maintenance_workorder_views.xml -->
 <odoo>
     <record id="view_workorder_tree" model="ir.ui.view">
         <field name="name">workorder.tree</field>
@@ -37,4 +36,18 @@
             </form>
         </field>
     </record>
+
+    <record id="action_maintenance_workorder" model="ir.actions.act_window">
+        <field name="name">Maintenance Work Orders</field>
+        <field name="res_model">maintenance.workorder</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new maintenance work order
+            </p><p>
+                Manage and track all maintenance tasks for your assets.
+            </p>
+        </field>
+    </record>
+
 </odoo>

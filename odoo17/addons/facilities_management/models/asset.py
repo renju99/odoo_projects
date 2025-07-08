@@ -1,3 +1,4 @@
+# models/asset.py
 from odoo import models, fields, api
 
 
@@ -14,7 +15,7 @@ class FacilityAsset(models.Model):
     maintenance_ids = fields.One2many('facilities.asset.maintenance', 'asset_id', string='Maintenance Records')
     depreciation_ids = fields.One2many('facilities.asset.depreciation', 'asset_id', string='Depreciation Records')
     attachment_ids = fields.Many2many('ir.attachment', string='Documents',
-                                      domain="[('res_model','=','facilities.asset')]")
+                                    domain="[('res_model','=','facilities.asset')]")
 
     category_id = fields.Many2one('facilities.asset.category', string='Category')
     purchase_date = fields.Date('Purchase Date')
@@ -36,6 +37,13 @@ class FacilityAsset(models.Model):
     notes = fields.Text('Notes')
     active = fields.Boolean('Active', default=True)
 
+    # New field for dashboard compatibility
+    is_enterprise = fields.Boolean(
+        string="Enterprise Mode",
+        compute='_compute_is_enterprise',
+        help="Technical field to check if enterprise features are available"
+    )
+
     @api.depends('warranty_expiration_date')
     def _compute_warranty_status(self):
         today = fields.Date.today()
@@ -47,5 +55,41 @@ class FacilityAsset(models.Model):
             else:
                 asset.warranty_status = 'expired'
 
+    def _compute_is_enterprise(self):
+        """Check if web_enterprise module is installed"""
+        enterprise_installed = self.env['ir.module.module'].search_count([
+            ('name', '=', 'web_enterprise'),
+            ('state', '=', 'installed')
+        ])
+        for asset in self:
+            asset.is_enterprise = enterprise_installed
+
     def name_get(self):
         return [(record.id, f"{record.name} [{record.asset_code}]") for record in self]
+
+    def action_open_dashboard(self):
+        """Open appropriate dashboard view based on availability of enterprise"""
+        self.ensure_one()
+        if self.is_enterprise:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Asset Dashboard (Enterprise)',
+                'res_model': 'facilities.asset',
+                'view_mode': 'dashboard',
+                'views': [(False, 'dashboard')],
+                'target': 'current',
+                'context': dict(self.env.context),
+            }
+        else:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Asset Dashboard (Community)',
+                'res_model': 'facilities.asset',
+                'view_mode': 'graph,pivot',
+                'views': [
+                    (False, 'graph'),
+                    (False, 'pivot')
+                ],
+                'target': 'current',
+                'context': dict(self.env.context),
+            }
