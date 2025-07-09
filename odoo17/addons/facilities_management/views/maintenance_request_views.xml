@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_maintenance_request_category_tree" model="ir.ui.view">
+        <field name="name">maintenance.request.category.tree</field>
+        <field name="model">maintenance.request.category</field>
+        <field name="arch" type="xml">
+            <tree string="Maintenance Request Categories">
+                <field name="name"/>
+                <field name="description"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_category_form" model="ir.ui.view">
+        <field name="name">maintenance.request.category.form</field>
+        <field name="model">maintenance.request.category</field>
+        <field name="arch" type="xml">
+            <form string="Maintenance Request Category">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_maintenance_request_category" model="ir.actions.act_window">
+        <field name="name">Request Categories</field>
+        <field name="res_model">maintenance.request.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Define categories for your maintenance requests.
+            </p>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_tree" model="ir.ui.view">
+        <field name="name">maintenance.request.tree</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <tree string="Maintenance Requests" decoration-success="status=='resolved'" decoration-info="status=='in_progress'" decoration-danger="priority=='3' and status not in ('resolved', 'closed', 'cancelled')">
+                <field name="name"/>
+                <field name="requestor_id"/>
+                <field name="facility_id"/>
+                <field name="asset_id"/>
+                <field name="category_id"/>
+                <field name="priority" widget="priority"/>
+                <field name="date_requested"/>
+                <field name="assigned_to_id"/>
+                <field name="status" widget="badge"/>
+                <field name="date_closed"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_form" model="ir.ui.view">
+        <field name="name">maintenance.request.form</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <form string="Maintenance Request">
+                <header>
+                    <button name="action_create_workorder" type="object" string="Create Work Order" class="oe_highlight" attrs="{'invisible': [('workorder_id', '!=', False)]}"/>
+                    <button name="action_set_assigned" type="object" string="Mark Assigned" attrs="{'invisible': [('status', 'not in', ['new'])]}"/>
+                    <button name="action_set_in_progress" type="object" string="Mark In Progress" attrs="{'invisible': [('status', 'not in', ['new', 'assigned'])]}"/>
+                    <button name="action_set_resolved" type="object" string="Mark Resolved" attrs="{'invisible': [('status', 'not in', ['new', 'assigned', 'in_progress'])]}"/>
+                    <button name="action_set_closed" type="object" string="Mark Closed" attrs="{'invisible': [('status', 'not in', ['resolved'])]}"/>
+                    <button name="action_set_cancelled" type="object" string="Mark Cancelled" attrs="{'invisible': [('status', 'in', ['resolved', 'closed', 'cancelled'])]}"/>
+                    <field name="status" widget="statusbar" statusbar_visible="new,assigned,in_progress,resolved,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_workorder" type="object" class="oe_stat_button" icon="fa-wrench"
+                                attrs="{'invisible': [('workorder_id', '=', False)]}">
+                            <field name="workorder_id" invisible="1"/>
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Work Order</span>
+                            </div>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="requestor_id"/>
+                            <field name="facility_id"/>
+                            <field name="asset_id" domain="[('facility_id', '=', facility_id)]"/>
+                        </group>
+                        <group>
+                            <field name="category_id"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="date_requested"/>
+                            <field name="assigned_to_id"/>
+                            <field name="date_closed"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Other Info" name="other_info">
+                            <group>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                                </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_search" model="ir.ui.view">
+        <field name="name">maintenance.request.search</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <search string="Maintenance Requests">
+                <field name="name" string="Request"/>
+                <field name="requestor_id"/>
+                <field name="facility_id"/>
+                <field name="asset_id"/>
+                <field name="category_id"/>
+                <field name="assigned_to_id"/>
+                <filter name="status_new" string="New" domain="[('status', '=', 'new')]"/>
+                <filter name="status_assigned" string="Assigned" domain="[('status', '=', 'assigned')]"/>
+                <filter name="status_in_progress" string="In Progress" domain="[('status', '=', 'in_progress')]"/>
+                <filter name="status_resolved" string="Resolved" domain="[('status', '=', 'resolved')]"/>
+                <filter name="status_closed" string="Closed" domain="[('status', '=', 'closed')]"/>
+                <filter name="status_cancelled" string="Cancelled" domain="[('status', '=', 'cancelled')]"/>
+                <filter name="my_requests" string="My Requests" domain="[('requestor_id.user_id', '=', uid)]"/>
+                <filter name="assigned_to_me" string="Assigned to Me" domain="[('assigned_to_id.user_id', '=', uid)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="groupby_status" string="Status" context="{'group_by': 'status'}"/>
+                    <filter name="groupby_facility" string="Facility" context="{'group_by': 'facility_id'}"/>
+                    <filter name="groupby_asset" string="Asset" context="{'group_by': 'asset_id'}"/>
+                    <filter name="groupby_category" string="Category" context="{'group_by': 'category_id'}"/>
+                    <filter name="groupby_requestor" string="Requestor" context="{'group_by': 'requestor_id'}"/>
+                    <filter name="groupby_assigned_to" string="Assigned To" context="{'group_by': 'assigned_to_id'}"/>
+                    <filter name="groupby_priority" string="Priority" context="{'group_by': 'priority'}"/>
+                    <filter name="groupby_month" string="Request Month" context="{'group_by': 'date_requested:quarter'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_maintenance_request" model="ir.actions.act_window">
+        <field name="name">Maintenance Requests</field>
+        <field name="res_model">maintenance.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_status_new': 1}</field> <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new maintenance request.
+            </p><p>
+                Track issues, assign technicians, and manage the resolution process.
+            </p>
+        </field>
+    </record>
+</odoo>
