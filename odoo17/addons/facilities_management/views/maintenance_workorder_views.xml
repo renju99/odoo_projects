@@ -15,6 +15,22 @@
             <form>
                 <header>
                     <field name="status" widget="statusbar"/>
+
+                    <button name="action_start_progress" type="object" string="Start Progress"
+            invisible="status != 'draft'"
+            class="oe_highlight"/>
+
+                    <button name="action_complete" type="object" string="Mark as Completed"
+            invisible="status != 'in_progress'"
+            class="oe_highlight"/>
+
+                    <button name="action_cancel" type="object" string="Cancel"
+            invisible="status in ('done', 'cancelled')"/>
+
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+            invisible="status not in ('done', 'cancelled')"
+            confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
+
                 </header>
                 <sheet>
                     <group>

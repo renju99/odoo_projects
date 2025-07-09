@@ -3,7 +3,7 @@
         <field name="name">asset.maintenance.schedule.calendar</field>
         <field name="model">asset.maintenance.schedule</field>
         <field name="arch" type="xml">
-            <calendar date_start="maintenance_date"
+            <calendar date_start="next_maintenance_date"
                       color="asset_id"
                       string="Maintenance Calendar">
                 <field name="name"/>

@@ -1,5 +1,6 @@
 # models/maintenance_workorder.py
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 class MaintenanceWorkOrder(models.Model):
     _name = 'maintenance.workorder'
@@ -26,7 +27,6 @@ class MaintenanceWorkOrder(models.Model):
         ('repair', 'Repair'),
     ], string='Work Order Type', required=True, default='corrective', tracking=True)
 
-    # RE-ADD THE technician_id FIELD HERE
     technician_id = fields.Many2one(
         'hr.employee',
         string="Technician",
@@ -34,7 +34,6 @@ class MaintenanceWorkOrder(models.Model):
         tracking=True
     )
 
-    # The One2Many field for technician assignments (keep this if you want both)
     assignment_ids = fields.One2many(
         'maintenance.workorder.assignment',
         'workorder_id',
@@ -47,8 +46,14 @@ class MaintenanceWorkOrder(models.Model):
         required=True,
         tracking=True
     )
-    start_date = fields.Datetime(default=fields.Datetime.now)
-    end_date = fields.Datetime()
+    start_date = fields.Datetime(string="Scheduled Start", default=fields.Datetime.now) # Renamed for clarity
+    end_date = fields.Datetime(string="Scheduled End") # Renamed for clarity
+
+    # Add actual_start_date and actual_end_date for tracking real work time
+    actual_start_date = fields.Datetime(string="Actual Start Date", readonly=True)
+    actual_end_date = fields.Datetime(string="Actual End Date", readonly=True)
+
+
     status = fields.Selection([
         ('draft', 'Draft'),
         ('in_progress', 'In Progress'),
@@ -56,7 +61,6 @@ class MaintenanceWorkOrder(models.Model):
         ('cancelled', 'Cancelled')
     ], default='draft', tracking=True)
 
-    # RE-ADD THE _default_technician METHOD
     def _default_technician(self):
         employee = self.env.user.employee_id
         return employee.id if employee else False
@@ -66,7 +70,50 @@ class MaintenanceWorkOrder(models.Model):
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.workorder') or 'New'
-            # Ensure technician_id is set if not provided and using default
             if not vals.get('technician_id'):
                 vals['technician_id'] = self._default_technician()
         return super().create(vals_list)
+
+    # --- Status Transition Methods ---
+
+    def action_start_progress(self):
+        """Moves work order to 'In Progress' state and sets actual start date."""
+        for rec in self:
+            if rec.status == 'draft':
+                rec.write({
+                    'status': 'in_progress',
+                    'actual_start_date': fields.Datetime.now(),
+                })
+            else:
+                raise UserError(_("Work order must be in 'Draft' state to start progress."))
+
+    def action_complete(self):
+        """Moves work order to 'Completed' state and sets actual end date."""
+        for rec in self:
+            if rec.status == 'in_progress':
+                rec.write({
+                    'status': 'done',
+                    'actual_end_date': fields.Datetime.now(),
+                })
+            else:
+                raise UserError(_("Work order must be 'In Progress' to complete."))
+
+    def action_cancel(self):
+        """Cancels the work order."""
+        for rec in self:
+            if rec.status in ('draft', 'in_progress'):
+                rec.write({'status': 'cancelled'})
+            else:
+                raise UserError(_("Work order can only be cancelled from 'Draft' or 'In Progress' states."))
+
+    def action_reset_to_draft(self):
+        """Resets a cancelled or completed work order back to draft. Use with caution."""
+        for rec in self:
+            if rec.status in ('done', 'cancelled'):
+                rec.write({
+                    'status': 'draft',
+                    'actual_start_date': False,
+                    'actual_end_date': False,
+                })
+            else:
+                raise UserError(_("Work order can only be reset from 'Completed' or 'Cancelled' states."))
