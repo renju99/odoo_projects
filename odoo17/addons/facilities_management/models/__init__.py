@@ -16,6 +16,7 @@ from . import maintenance_workorder
 from . import asset_depreciation
 from . import predictive_algorithm
 from . import predictive_maintenance
+from . import maintenance_workorder_assignment
 
 # The pre_init_hook can remain if its logic is still desired
 def pre_init_hook(cr):

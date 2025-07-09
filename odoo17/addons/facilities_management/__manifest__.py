@@ -6,7 +6,7 @@
         'base',
         'mail',
         'hr',
-        'web',  # <--- ADD THIS LINE
+        'web',
     ],
     'data': [
         # Security and sequences first
@@ -21,7 +21,6 @@
         'views/facility_views.xml',
         'views/asset_category_views.xml',
         'views/facility_asset_views.xml',
-        # 'views/asset_iot_views.xml', # This should already be removed
 
         # Maintenance features
         'views/asset_maintenance_schedule_views.xml',
@@ -29,6 +28,8 @@
         'views/maintenance_workorder_views.xml',
         'views/asset_maintenance_scheduled_actions.xml',
         'views/predictive_algorithm_views.xml',
+        # If you were to create a standalone view for assignment, you'd add it here:
+        # 'views/maintenance_workorder_assignment_views.xml',
 
         # Reporting
         'views/maintenance_report_views.xml',
@@ -39,16 +40,8 @@
         # UI
         'views/facility_asset_menus.xml',
         'views/facility_asset_search.xml',
-        # 'views/iot_asset_dashboard.xml', # This should also be removed if it existed
     ],
-    'application': True,
     'installable': True,
+    'application': True,
     'auto_install': False,
-    'license': 'LGPL-3',
-    'description': """
-        Facilities Management Module for Odoo
-        =====================================
-        This module provides comprehensive management for facilities and assets,
-        including asset tracking, maintenance scheduling, and predictive analysis.
-    """,
 }

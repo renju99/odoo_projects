@@ -4,12 +4,7 @@
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="name"/>
-                <field name="asset_id"/>
-                <field name="technician_id"/>
-                <field name="status"/>
-                <field name="start_date"/>
-            </tree>
+                <field name="name"/>             <field name="asset_id"/>         <field name="work_order_type"/>  <field name="technician_id"/>    <field name="status"/>           <field name="start_date"/>       <field name="end_date"/>         </tree>
         </field>
     </record>
 
@@ -26,28 +21,32 @@
                         <field name="name"/>
                         <field name="asset_id" options="{'no_create': True}"/>
                         <field name="schedule_id"
-                               domain="[('asset_id','=',asset_id)]"
+                               domain="[('status','=','planned'), ('asset_id','=',asset_id)]"
                                context="{'default_asset_id': asset_id}"/>
+                        <field name="work_order_type"/>
                         <field name="technician_id"/>
                         <field name="start_date"/>
                         <field name="end_date"/>
                     </group>
+
+                    <notebook>
+                        <page string="Technician Assignments">
+                            <field name="assignment_ids">
+                                <tree editable="bottom">
+                                    <field name="technician_id"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
             </form>
         </field>
     </record>
-
-    <record id="action_maintenance_workorder" model="ir.actions.act_window">
-        <field name="name">Maintenance Work Orders</field>
-        <field name="res_model">maintenance.workorder</field>
-        <field name="view_mode">tree,form</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create a new maintenance work order
-            </p><p>
-                Manage and track all maintenance tasks for your assets.
-            </p>
-        </field>
-    </record>
-
 </odoo>

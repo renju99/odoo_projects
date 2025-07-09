@@ -24,6 +24,11 @@
         <field name="view_mode">tree,form,calendar</field>
     </record>
 
+    <record id="action_maintenance_workorder" model="ir.actions.act_window">
+        <field name="name">Maintenance Work Orders</field>
+        <field name="res_model">maintenance.workorder</field>
+        <field name="view_mode">tree,form</field>
+    </record>
     <menuitem id="menu_facilities_root" name="Facility Management" sequence="10"/>
 
     <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
@@ -52,7 +57,7 @@
               name="Calendar View"
               parent="menu_maintenance"
               action="action_maintenance_calendar"  sequence="30"/>
-<menuitem id="menu_scheduled_maintenance_actions"
+    <menuitem id="menu_scheduled_maintenance_actions"
           name="Scheduled Actions"
           parent="menu_maintenance"
           action="action_asset_maintenance_scheduled_actions"
