@@ -17,3 +17,4 @@ access_maintenance_workorder_manager,maintenance.workorder.manager,model_mainten
 access_predictive_algorithm,predictive.algorithm,model_predictive_algorithm,base.group_user,1,0,0,0
 access_predictive_algorithm_manager,predictive.algorithm,model_predictive_algorithm,base.group_erp_manager,1,1,1,1
 access_maintenance_workorder_assignment,maintenance.workorder.assignment.user,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
+access_maintenance_workorder_part_line,maintenance.workorder.part_line,model_maintenance_workorder_part_line,,1,1,1,1

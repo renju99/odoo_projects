@@ -7,11 +7,17 @@
         'mail',
         'hr',
         'web',
+        'maintenance',
+        'sale_management',
+        'stock',
+        'product',
     ],
     'data': [
         # Security and sequences first
         'data/sequences.xml',
+        'data/predictive_parameters.xml',
         'data/maintenance_cron.xml',
+        'data/email_templates.xml',
         'security/facility_management_security.xml',
         'security/ir.model.csv',
         'security/ir.model.access.csv',
@@ -27,8 +33,8 @@
         'views/maintenance_workorder_views.xml',
         'views/asset_maintenance_scheduled_actions.xml',
         'views/predictive_algorithm_views.xml',
-        # If you were to create a standalone view for assignment, you'd add it here:
-        # 'views/maintenance_workorder_assignment_views.xml',
+        'views/maintenance_workorder_part_line_views.xml',
+        'views/product_views.xml',
 
         # Reporting
         'views/maintenance_report_views.xml',
@@ -38,9 +44,10 @@
 
         # UI
         'views/facility_asset_menus.xml',
-        'views/facility_asset_search.xml',
+        # ... (rest of your data files)
     ],
-    'installable': True,
     'application': True,
+    'installable': True,
     'auto_install': False,
+    'license': 'LGPL-3', # It's good practice to define a license
 }
