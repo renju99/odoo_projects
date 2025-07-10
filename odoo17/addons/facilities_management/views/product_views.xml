@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- This creates new fields without trying to modify non-existent ones -->
+    <record id="view_product_product_extension" model="ir.ui.view">
+        <field name="name">product.product.form.extension</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <!-- Just add something simple to ensure the inheritance works -->
+            <field name="default_code" position="after">
+                <field name="service_tracking" invisible="1"/>
+                <field name="service_policy" invisible="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>
