@@ -13,7 +13,6 @@ from . import asset
 from . import asset_maintenance_schedule
 from . import maintenance_workorder
 from . import asset_depreciation
-from . import predictive_algorithm
 from . import predictive_maintenance
 from . import maintenance_workorder_assignment
 from . import hr_employee

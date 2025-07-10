@@ -1,9 +1,0 @@
-id,model,name
-model_facilities_facility,facilities.facility,Facility Management
-model_facilities_facility,facilities.facility,Facility
-model_facilities_asset,facilities.asset,Asset
-model_facilities_asset_category,facilities.asset.category,Asset Category
-model_asset_maintenance_schedule,asset.maintenance.schedule,Asset Maintenance Schedule
-model_maintenance_workorder,maintenance.workorder,Maintenance Work Order
-model_facilities_asset_depreciation,facilities.asset.depreciation,Asset Depreciation
-model_predictive_algorithm,predictive.algorithm,Predictive Algorithm

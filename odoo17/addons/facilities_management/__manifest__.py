@@ -19,7 +19,6 @@
         'data/maintenance_cron.xml',
         'data/email_templates.xml',
         'security/facility_management_security.xml',
-        'security/ir.model.csv',
         'security/ir.model.access.csv',
 
         # Core views
@@ -32,7 +31,6 @@
         'views/asset_maintenance_calendar_views.xml',
         'views/maintenance_workorder_views.xml',
         'views/asset_maintenance_scheduled_actions.xml',
-        'views/predictive_algorithm_views.xml',
         'views/maintenance_workorder_part_line_views.xml',
         'views/product_views.xml',
 

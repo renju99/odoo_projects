@@ -31,6 +31,7 @@
 # yael terner, 2024
 # Larissa Manderfeld, 2025
 # דודי מלכה <Dudimalka6@gmail.com>, 2025
+# Yoram Lavi, 2025
 # or balmas, 2025
 # 
 msgid ""
@@ -32457,7 +32458,7 @@ msgstr "כדי להחזיר פעולה, הקצה:<code>פעולה= {...}</code>"
 #: model:ir.module.category,name:base.module_category_productivity_to-do
 #: model:ir.module.module,shortdesc:base.module_project_todo
 msgid "To-Do"
-msgstr ""
+msgstr "מטלה"
 
 #. module: base
 #: model_terms:ir.ui.view,arch_db:base.ir_actions_todo_tree
@@ -34348,7 +34349,7 @@ msgstr "בשביל מה המפתח הזה?"
 #. module: base
 #: model:ir.module.category,name:base.module_category_whatsapp
 msgid "WhatsApp"
-msgstr ""
+msgstr "WhatsApp"
 
 #. module: base
 #: model:ir.module.module,shortdesc:base.module_test_whatsapp

@@ -145,7 +145,7 @@ msgstr ""
 #. module: hr_work_entry_contract
 #: model:hr.work.entry.type,name:hr_work_entry_contract.work_entry_type_extra_hours
 msgid "Extra Hours"
-msgstr ""
+msgstr "Dodatne ure"
 
 #. module: hr_work_entry_contract
 #: model:ir.model.fields,field_description:hr_work_entry_contract.field_hr_work_entry_regeneration_wizard__date_from
@@ -236,7 +236,7 @@ msgstr ""
 #. module: hr_work_entry_contract
 #: model:hr.work.entry.type,name:hr_work_entry_contract.work_entry_type_legal_leave
 msgid "Paid Time Off"
-msgstr ""
+msgstr "Plačan prosti čas"
 
 #. module: hr_work_entry_contract
 #: model:ir.model,name:hr_work_entry_contract.model_hr_work_entry_regeneration_wizard
@@ -255,7 +255,7 @@ msgstr ""
 #. module: hr_work_entry_contract
 #: model:ir.model,name:hr_work_entry_contract.model_resource_calendar
 msgid "Resource Working Time"
-msgstr ""
+msgstr "Delovni čas virov"
 
 #. module: hr_work_entry_contract
 #: model:ir.model.fields,field_description:hr_work_entry_contract.field_hr_work_entry_regeneration_wizard__search_criteria_completed
@@ -265,7 +265,7 @@ msgstr ""
 #. module: hr_work_entry_contract
 #: model:hr.work.entry.type,name:hr_work_entry_contract.work_entry_type_sick_leave
 msgid "Sick Time Off"
-msgstr ""
+msgstr "Bolniški dopust"
 
 #. module: hr_work_entry_contract
 #. odoo-python
