@@ -12,7 +12,6 @@
                 <field name="interval_type"/>
                 <field name="last_maintenance_date"/>
                 <field name="next_maintenance_date"/>
-                <field name="status"/>
                 <field name="active"/>
             </tree>
         </field>
@@ -40,8 +39,7 @@
                             <field name="maintenance_type"/>
                         </group>
                         <group>
-                            <field name="last_maintenance_date"/>
-                            <field name="next_maintenance_date"/>
+                            <field name="last_maintenance_date"/> <field name="next_maintenance_date"/>
                             <field name="interval_number"/>
                             <field name="interval_type"/>
                         </group>

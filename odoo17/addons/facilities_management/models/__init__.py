@@ -10,7 +10,6 @@ _logger = logging.getLogger(__name__)
 from . import facility
 from . import asset_category
 from . import asset
-from . import asset_maintenance
 from . import asset_maintenance_schedule
 from . import maintenance_workorder
 from . import asset_depreciation

@@ -1,6 +1,7 @@
 # models/maintenance_workorder.py
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+# from datetime import datetime # Ensure datetime is imported if not already, for fields.Datetime.now()
 
 class MaintenanceWorkOrder(models.Model):
     _name = 'maintenance.workorder'
@@ -16,7 +17,7 @@ class MaintenanceWorkOrder(models.Model):
     schedule_id = fields.Many2one(
         'asset.maintenance.schedule',
         string="Schedule",
-        domain="[('status','=','planned')]",
+        domain="[('active','=',True)]",
         ondelete='set null'
     )
     work_order_type = fields.Selection([
@@ -46,13 +47,11 @@ class MaintenanceWorkOrder(models.Model):
         required=True,
         tracking=True
     )
-    start_date = fields.Datetime(string="Scheduled Start", default=fields.Datetime.now) # Renamed for clarity
-    end_date = fields.Datetime(string="Scheduled End") # Renamed for clarity
+    start_date = fields.Datetime(string="Scheduled Start", default=fields.Datetime.now)
+    end_date = fields.Datetime(string="Scheduled End")
 
-    # Add actual_start_date and actual_end_date for tracking real work time
     actual_start_date = fields.Datetime(string="Actual Start Date", readonly=True)
     actual_end_date = fields.Datetime(string="Actual End Date", readonly=True)
-
 
     status = fields.Selection([
         ('draft', 'Draft'),
@@ -95,6 +94,10 @@ class MaintenanceWorkOrder(models.Model):
                     'status': 'done',
                     'actual_end_date': fields.Datetime.now(),
                 })
+                # NEW LOGIC: Update the last_maintenance_date on the associated schedule
+                if rec.schedule_id and rec.actual_end_date:
+                    # Convert datetime to date, as last_maintenance_date is a Date field
+                    rec.schedule_id.last_maintenance_date = rec.actual_end_date.date()
             else:
                 raise UserError(_("Work order must be 'In Progress' to complete."))
 

@@ -11,7 +11,6 @@
     'data': [
         # Security and sequences first
         'data/sequences.xml',
-        'data/predictive_parameters.xml',
         'data/maintenance_cron.xml',
         'security/facility_management_security.xml',
         'security/ir.model.csv',

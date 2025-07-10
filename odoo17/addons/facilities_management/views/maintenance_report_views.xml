@@ -7,7 +7,6 @@
         <field name="views" eval="[(False, 'pivot'), (False, 'graph')]"/>
     </record>
 
-    <!-- Pivot View -->
     <record id="view_maintenance_pivot" model="ir.ui.view">
         <field name="name">maintenance.pivot</field>
         <field name="model">asset.maintenance.schedule</field>
@@ -15,12 +14,10 @@
             <pivot>
                 <field name="asset_id" type="row"/>
                 <field name="maintenance_type" type="col"/>
-                <field name="status" interval="month"/>
-            </pivot>
+                <field name="active" type="col"/> </pivot>
         </field>
     </record>
 
-    <!-- Graph View -->
     <record id="view_maintenance_graph" model="ir.ui.view">
         <field name="name">maintenance.graph</field>
         <field name="model">asset.maintenance.schedule</field>
@@ -28,7 +25,7 @@
             <graph type="bar">
                 <field name="asset_id"/>
                 <field name="maintenance_type"/>
-            </graph>
+                </graph>
         </field>
     </record>
 </odoo>

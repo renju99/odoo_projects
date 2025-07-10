@@ -1,48 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_workorder_tree" model="ir.ui.view">
-        <field name="name">workorder.tree</field>
+        <field name="name">maintenance.workorder.tree</field>
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="name"/>             <field name="asset_id"/>         <field name="work_order_type"/>  <field name="technician_id"/>    <field name="status"/>           <field name="start_date"/>       <field name="end_date"/>         </tree>
+                <field name="name"/>             <!-- Reference -->
+                <field name="asset_id"/>         <!-- Asset -->
+                <field name="work_order_type"/>  <!-- Work Order Type -->
+                <field name="technician_id"/>    <!-- Primary Technician -->
+                <field name="status"/>           <!-- Status (Re-added) -->
+                <field name="start_date"/>       <!-- Start Date -->
+                <field name="end_date"/>         <!-- End Date (Re-added) -->
+            </tree>
         </field>
     </record>
 
     <record id="view_workorder_form" model="ir.ui.view">
-        <field name="name">workorder.form</field>
+        <field name="name">maintenance.workorder.form</field>
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <field name="status" widget="statusbar"/>
+                    <field name="status" widget="statusbar"/> <!-- Statusbar (Re-added) -->
 
+                    <!-- Status Transition Buttons (Re-added with Odoo 17 syntax) -->
                     <button name="action_start_progress" type="object" string="Start Progress"
-            invisible="status != 'draft'"
-            class="oe_highlight"/>
+                            invisible="status != 'draft'"
+                            class="oe_highlight"/>
 
                     <button name="action_complete" type="object" string="Mark as Completed"
-            invisible="status != 'in_progress'"
-            class="oe_highlight"/>
+                            invisible="status != 'in_progress'"
+                            class="oe_highlight"/>
 
                     <button name="action_cancel" type="object" string="Cancel"
-            invisible="status in ('done', 'cancelled')"/>
+                            invisible="status in ('done', 'cancelled')"/>
 
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
-            invisible="status not in ('done', 'cancelled')"
-            confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
-
+                            invisible="status not in ('done', 'cancelled')"
+                            confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
                 </header>
                 <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="asset_id" options="{'no_create': True}"/>
-                        <field name="schedule_id"
-                               domain="[('status','=','planned'), ('asset_id','=',asset_id)]"
-                               context="{'default_asset_id': asset_id}"/>
-                        <field name="work_order_type"/>
-                        <field name="technician_id"/>
-                        <field name="start_date"/>
-                        <field name="end_date"/>
+                        <group>
+                            <field name="name"/>
+                            <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="schedule_id"
+                                   domain="[('active','=',True), ('asset_id','=',asset_id)]"
+                                   context="{'default_asset_id': asset_id}"/>
+                            <field name="work_order_type"/>
+                            <field name="technician_id"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>       <!-- Scheduled Start Date -->
+                            <field name="end_date"/>         <!-- Scheduled End Date (Re-added) -->
+                        </group>
+                    </group>
+                    <group string="Actual Work Dates"> <!-- Re-added for clarity -->
+                        <field name="actual_start_date"/>
+                        <field name="actual_end_date"/>
                     </group>
 
                     <notebook>
@@ -54,6 +70,17 @@
                                     <field name="end_date"/>
                                 </tree>
                             </field>
+                        </page>
+                        <page string="Description">
+                            <!-- If you want a description field, you must add it to maintenance.workorder model first -->
+                            <!-- <field name="description"/> -->
+                        </page>
+                        <page string="Work Done">
+                            <!-- If you want a work_done field, you must add it to maintenance.workorder model first -->
+                            <!-- <field name="work_done"/> -->
+                        </page>
+                        <page string="Parts Used">
+                            <!-- Field for parts used (if applicable and defined in Python model) -->
                         </page>
                     </notebook>
                 </sheet>

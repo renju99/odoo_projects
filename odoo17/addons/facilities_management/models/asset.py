@@ -12,7 +12,8 @@ class FacilityAsset(models.Model):
     serial_number = fields.Char(string="Serial Number")
     facility_id = fields.Many2one('facilities.facility', string='Project', required=True)
     asset_code = fields.Char('Asset Code', size=20)
-    maintenance_ids = fields.One2many('facilities.asset.maintenance', 'asset_id', string='Maintenance Records')
+    # CORRECTED LINE: Changed 'facilities.asset.maintenance' to 'asset.maintenance.schedule'
+    maintenance_ids = fields.One2many('asset.maintenance.schedule', 'asset_id', string='Maintenance Schedules')
     depreciation_ids = fields.One2many('facilities.asset.depreciation', 'asset_id', string='Depreciation Records')
     attachment_ids = fields.Many2many('ir.attachment', string='Documents',
                                     domain="[('res_model','=','facilities.asset')]")
