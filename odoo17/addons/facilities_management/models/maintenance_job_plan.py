@@ -49,14 +49,5 @@ class MaintenanceJobPlanTask(models.Model):
                               help="Order in which the tasks appear.")
     description = fields.Text(string='Instructions',
                               help="Detailed instructions for performing this task.")
-    frequency_type = fields.Selection([
-        ('monthly', 'Monthly'),
-        ('quarterly', 'Quarterly'),
-        ('biannual', 'Biannual'),
-        ('annual', 'Annual'),
-        ('ad_hoc', 'Ad-hoc / As Needed'),
-        ('other', 'Other'),
-    ], string='Recommended Frequency', default='ad_hoc',
-       help="Recommended frequency for this specific task within the job plan.")
     is_checklist_item = fields.Boolean(string='Checklist Item', default=True,
                                         help="If checked, this task can be marked as completed on a work order.")

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Tree View for Maintenance Job Plan -->
     <record id="maintenance_job_plan_view_tree" model="ir.ui.view">
         <field name="name">maintenance.job.plan.tree</field>
         <field name="model">maintenance.job.plan</field>
@@ -14,14 +15,13 @@
         </field>
     </record>
 
+    <!-- Form View for Maintenance Job Plan -->
     <record id="maintenance_job_plan_view_form" model="ir.ui.view">
         <field name="name">maintenance.job.plan.form</field>
         <field name="model">maintenance.job.plan</field>
         <field name="arch" type="xml">
             <form string="Maintenance Job Plan">
                 <header>
-                    <!-- CORRECTED: Removed 'attrs' from toggle_active buttons. -->
-                    <!-- Odoo 17 handles visibility for 'active' field's toggle_active implicitly. -->
                     <button name="toggle_active" type="object" string="Archive"
                             confirm="Are you sure you want to archive this Job Plan?"/>
                     <button name="toggle_active" type="object" string="Unarchive"
@@ -52,15 +52,13 @@
                                 <tree editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
-                                    <field name="frequency_type"/>
-                                    <field name="is_checklist_item"/>
                                     <field name="description"/>
+                                    <field name="is_checklist_item"/>
                                 </tree>
                                 <form>
                                     <group>
                                         <group>
                                             <field name="name"/>
-                                            <field name="frequency_type"/>
                                             <field name="description"/>
                                         </group>
                                         <group>

@@ -6,15 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="3b0efb04-354b-4b9b-b8f9-68448655cf12" name="Changes" comment="Initial Commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/__manifest__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/__manifest__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/data/sequences.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/data/sequences.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/asset_maintenance_schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/asset_maintenance_schedule.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_request.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_request.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_workorder.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_workorder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/stock_picking.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/stock_picking.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/security/ir.model.access.csv" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/security/ir.model.access.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_workorder_views.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_workorder_views.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_job_plan.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_job_plan.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_job_plan_views.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_job_plan_views.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
