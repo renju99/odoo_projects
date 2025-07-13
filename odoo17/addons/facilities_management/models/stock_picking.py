@@ -10,3 +10,9 @@ class StockPicking(models.Model):
         help="Link to the Maintenance Work Order that generated this stock transfer.",
         copy=False # Do not copy this link when duplicating a picking
     )
+
+class StockMove(models.Model):
+    _inherit = 'stock.move'
+
+    workorder_id = fields.Many2one('maintenance.workorder', string='Maintenance Work Order',
+                                   help='Related Maintenance Work Order', copy=False)

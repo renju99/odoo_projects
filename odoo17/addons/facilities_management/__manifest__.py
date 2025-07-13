@@ -7,7 +7,7 @@
         'mail',
         'hr',
         'web',
-        'maintenance',
+        'maintenance', # This dependency is important for the maintenance menu items
         'sale_management',
         'stock',
         'product',
@@ -40,6 +40,7 @@
         'views/asset_maintenance_scheduled_actions.xml',
         'views/maintenance_workorder_part_line_views.xml',
         'views/product_views.xml',
+        'views/maintenance_job_plan_views.xml', # ADD THIS LINE HERE
 
         # Reporting
         'views/maintenance_report_views.xml',

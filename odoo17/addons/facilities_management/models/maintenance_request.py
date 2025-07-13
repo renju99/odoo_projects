@@ -1,14 +1,19 @@
-# models/maintenance_request.py
+# /home/ranjith/odoo_projects/odoo17/addons/facilities_management/models/maintenance_request.py
+
 from odoo import fields, models, api
 from odoo.exceptions import UserError
 from datetime import datetime
 
 
-class MaintenanceRequest(models.Model):
-    # CORRECTED LINE: Inherit from maintenance.request and mail.thread, mail.activity.mixin
+class CustomMaintenanceRequestExtensionClass(models.Model): # Keep this unique Python class name
     _inherit = ['maintenance.request', 'mail.thread', 'mail.activity.mixin']
-    _description = 'Maintenance Request Extension' # Optional: You can keep or change this description
+    # ADD THIS LINE EXPLICITLY
+    _name = 'maintenance.request' # <--- EXPLICITLY SET _name to the model you are extending
+    _description = 'Maintenance Request Extension'
 
+
+    # Keep all your other fields and methods the same as they were.
+    # ... (all your fields and methods) ...
     name = fields.Char(string="Request Title", required=True)
     description = fields.Text(string="Description of the issue")
     requestor_id = fields.Many2one(
@@ -46,7 +51,7 @@ class MaintenanceRequest(models.Model):
     maintenance_team_id = fields.Many2one(
         'maintenance.team', string="Maintenance Team", tracking=True,
         ondelete='set null',
-        required=False,  # <--- Add this line
+        required=False,
         help="The team assigned to handle this maintenance request."
     )
 
@@ -65,7 +70,6 @@ class MaintenanceRequest(models.Model):
         help="Work Order created for this request."
     )
 
-    # --- START OF NEW/MODIFIED CODE FOR STAGE_ID ---
     stage_id = fields.Many2one(
         'maintenance.request.stage', string='Stage',
         compute='_compute_stage_id', store=True, readonly=True,
@@ -74,25 +78,16 @@ class MaintenanceRequest(models.Model):
 
     @api.depends('status')
     def _compute_stage_id(self):
-        """
-        Maps custom 'status' values to standard 'maintenance.request.stage' records.
-        These 'maintenance.stage_X' are external IDs from the core 'maintenance' module.
-        'raise_if_not_found=False' prevents errors if a stage isn't found,
-        allowing the field to be False.
-        """
         for rec in self:
+            rec.stage_id = False # Default to False
             if rec.status == 'new':
-                rec.stage_id = self.env.ref('maintenance.stage_0', raise_if_not_found=False) # e.g., New/Draft
+                rec.stage_id = self.env.ref('maintenance.stage_0', raise_if_not_found=False)
             elif rec.status == 'assigned' or rec.status == 'in_progress':
-                rec.stage_id = self.env.ref('maintenance.stage_1', raise_if_not_found=False) # e.g., In Progress
+                rec.stage_id = self.env.ref('maintenance.stage_1', raise_if_not_found=False)
             elif rec.status == 'resolved':
-                rec.stage_id = self.env.ref('maintenance.stage_2', raise_if_not_found=False) # e.g., Done
+                rec.stage_id = self.env.ref('maintenance.stage_2', raise_if_not_found=False)
             elif rec.status in ['closed', 'cancelled']:
-                rec.stage_id = self.env.ref('maintenance.stage_3', raise_if_not_found=False) # e.g., Cancelled/Closed
-            else:
-                rec.stage_id = False # Fallback if no mapping or if stage not found
-    # --- END OF NEW/MODIFIED CODE FOR STAGE_ID ---
-
+                rec.stage_id = self.env.ref('maintenance.stage_3', raise_if_not_found=False)
 
     @api.onchange('facility_id')
     def _onchange_facility_id(self):

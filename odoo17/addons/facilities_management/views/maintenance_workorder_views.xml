@@ -10,7 +10,10 @@
                     <button name="action_start_progress" type="object" string="Start Progress"
                             invisible="status != 'draft'" class="oe_highlight"/>
                     <button name="action_complete" type="object" string="Mark as Completed"
-                            invisible="status != 'in_progress'" class="oe_highlight"/>
+                            invisible="['|', ('status', '!=', 'in_progress'), ('all_tasks_completed', '=', False)]"
+                            class="oe_highlight"
+                            confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked.">
+                            </button>
                     <button name="action_cancel" type="object" string="Cancel"
                             invisible="status in ('done', 'cancelled')"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
@@ -18,6 +21,13 @@
                             confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" name="action_view_picking" type="object" icon="fa-truck"
+                                invisible="picking_count == 0">
+                                <field name="picking_count" widget="statinfo" string="Parts Transfers"/>
+                        </button>
+                        </div>
+
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
                         <h1><field name="name" placeholder="Work Order Reference"/></h1>
@@ -30,6 +40,10 @@
                             <field name="schedule_id"
                                    domain="[('active','=',True), ('asset_id','=',asset_id)]"
                                    context="{'default_asset_id': asset_id}"/>
+                            <field name="job_plan_id"
+                                   invisible="workorder_task_ids != False"
+                                   readonly="status != 'draft'"
+                                   help="Select a Job Plan to automatically populate tasks for this work order."/>
                         </group>
                         <group string="Personnel &amp; Scheduled Dates">
                             <field name="technician_id"/>
@@ -46,6 +60,41 @@
                     <notebook>
                         <page string="Description">
                             <field name="description"/>
+                        </page>
+                        <page string="Tasks / Checklist" name="tasks_page">
+                            <field name="workorder_task_ids"
+                                   invisible="job_plan_id == False and workorder_task_ids == False"
+                                   readonly="status not in ('draft', 'in_progress')">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="is_done" widget="boolean_toggle"/>
+                                    <field name="name"/>
+                                    <field name="description" optional="hide"/>
+                                    <field name="notes"/>
+                                    <field name="is_checklist_item" invisible="1"/>
+                                </tree>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="name"/>
+                                            <field name="description"/>
+                                        </group>
+                                        <group>
+                                            <field name="sequence"/>
+                                            <field name="is_done"/>
+                                            <field name="is_checklist_item"/>
+                                            <field name="frequency_type"/>
+                                        </group>
+                                    </group>
+                                    <field name="notes"/>
+                                </form>
+                            </field>
+                            <p class="oe_grey" invisible="job_plan_id == False and workorder_task_ids == False">
+                                Note: Only tasks marked as 'Checklist Item' need to be completed to finish the Work Order.
+                            </p>
+                            <p class="oe_grey" invisible="job_plan_id != False or workorder_task_ids != False">
+                                Link a Job Plan or add tasks manually to create a detailed checklist for this work order.
+                            </p>
                         </page>
                         <page string="Work Done">
                             <field name="work_done"/>
@@ -80,4 +129,5 @@
             </form>
         </field>
     </record>
+
 </odoo>

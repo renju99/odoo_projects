@@ -9,10 +9,12 @@
       <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/__manifest__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/__manifest__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/data/sequences.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/data/sequences.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/facility.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/facility.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/asset_maintenance_schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/asset_maintenance_schedule.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_request.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_request.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_workorder.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_workorder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/stock_picking.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/stock_picking.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/security/ir.model.access.csv" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/security/ir.model.access.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_asset_menus.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_asset_menus.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_views.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_views.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_workorder_views.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_workorder_views.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -307,7 +309,15 @@
       <option name="project" value="LOCAL" />
       <updated>1752393937830</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Initial Commit">
+      <option name="closed" value="true" />
+      <created>1752397175893</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1752397175893</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
