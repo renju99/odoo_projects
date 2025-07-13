@@ -4,13 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3b0efb04-354b-4b9b-b8f9-68448655cf12" name="Changes" comment="quantity in hand updated" />
+    <list default="true" id="3b0efb04-354b-4b9b-b8f9-68448655cf12" name="Changes" comment="quantity in hand updated">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$" value="main" />
@@ -25,12 +28,12 @@
     &quot;assignee&quot;: &quot;renju99&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/renju99/odoo_projects.git",
-    "accountId": "aedd5cac-614b-40c0-ab91-90cc26e643a2"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/renju99/odoo_projects.git&quot;,
+    &quot;accountId&quot;: &quot;aedd5cac-614b-40c0-ab91-90cc26e643a2&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
@@ -42,21 +45,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.Odoo15.executor": "Run",
-    "Python.Odoo16.executor": "Run",
-    "Python.Odoo17.executor": "Run",
-    "Python.Odoo18.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/ranjith/odoo_projects",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.Odoo15.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Odoo16.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Odoo17.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Odoo18.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/ranjith/odoo_projects&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/odoo17/addons/facilities_management/views" />
@@ -156,9 +159,9 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.Odoo17" />
-      <item itemvalue="Python.Odoo16" />
       <item itemvalue="Python.Odoo15" />
+      <item itemvalue="Python.Odoo16" />
+      <item itemvalue="Python.Odoo17" />
       <item itemvalue="Python.Odoo18" />
     </list>
   </component>
