@@ -22,6 +22,9 @@
             <form string="Facility">
                 <sheet>
                     <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" name="%(action_facilities_building)d" type="action" icon="fa-building">
+                            <field name="building_count" widget="statinfo" string="Buildings"/>
+                        </button>
                         </div>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
@@ -104,7 +107,19 @@
                             <field name="documents_ids" widget="many2many_binary" string="Attachments"/>
                         </page>
 
-                        </notebook>
+                        <page string="Buildings" name="facility_buildings_page">
+                            <field name="building_ids">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="building_type"/>
+                                    <field name="number_of_floors"/>
+                                    <field name="manager_id"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                    </notebook>
 
                     <field name="active" groups="base.group_no_one"/>
                 </sheet>
@@ -121,6 +136,11 @@
         <field name="name">Facilities</field>
         <field name="res_model">facilities.facility</field>
         <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Facility/Property
+            </p>
+        </field>
     </record>
 
     <record id="view_facilities_facility_search" model="ir.ui.view">

@@ -4,8 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3b0efb04-354b-4b9b-b8f9-68448655cf12" name="Changes" comment="quantity in hand updated">
+    <list default="true" id="3b0efb04-354b-4b9b-b8f9-68448655cf12" name="Changes" comment="Initial Commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/__manifest__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/__manifest__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/data/sequences.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/data/sequences.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/facility.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/facility.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/security/ir.model.access.csv" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/security/ir.model.access.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_asset_menus.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_asset_menus.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_views.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/facility_views.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -159,9 +166,9 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.Odoo15" />
-      <item itemvalue="Python.Odoo16" />
       <item itemvalue="Python.Odoo17" />
+      <item itemvalue="Python.Odoo16" />
+      <item itemvalue="Python.Odoo15" />
       <item itemvalue="Python.Odoo18" />
     </list>
   </component>
@@ -292,7 +299,15 @@
       <option name="project" value="LOCAL" />
       <updated>1752219139204</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Initial Commit">
+      <option name="closed" value="true" />
+      <created>1752393937830</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1752393937830</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -315,6 +330,7 @@
     <MESSAGE value="Initial commit" />
     <MESSAGE value="Product updated" />
     <MESSAGE value="quantity in hand updated" />
-    <option name="LAST_COMMIT_MESSAGE" value="quantity in hand updated" />
+    <MESSAGE value="Initial Commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial Commit" />
   </component>
 </project>

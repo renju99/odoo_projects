@@ -18,6 +18,9 @@ from . import maintenance_workorder_assignment
 from . import hr_employee
 from . import maintenance_workorder_part_line
 from . import product
+from . import building
+from . import floor
+from . import room
 
 # The pre_init_hook can remain if its logic is still desired
 def pre_init_hook(cr):

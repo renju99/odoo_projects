@@ -29,11 +29,17 @@
         <field name="res_model">maintenance.workorder</field>
         <field name="view_mode">tree,form</field>
     </record>
+
     <menuitem id="menu_facilities_root" name="Facility Management" sequence="10"/>
 
-    <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
+    <menuitem id="menu_facility_records" name="Facilities" parent="menu_facilities_root" sequence="10"/>
 
-    <menuitem id="menu_facility_records" name="Facilities" parent="menu_facilities_root" action="action_facility" sequence="10"/>
+    <menuitem id="menu_facility_list_item"
+              name="All Facilities"  parent="menu_facility_records"
+              action="action_facility"
+              sequence="5"/> <menuitem id="menu_buildings_item" name="Buildings" parent="menu_facility_records" action="action_facilities_building" sequence="10"/>
+    <menuitem id="menu_floors_item" name="Floors" parent="menu_facility_records" action="action_facilities_floor" sequence="20"/>
+    <menuitem id="menu_rooms_item" name="Rooms" parent="menu_facility_records" action="action_facilities_room" sequence="30"/>
 
     <menuitem id="menu_asset_management" name="Asset Management" parent="menu_facilities_root" sequence="15"/>
     <menuitem id="menu_asset_list" name="Assets" parent="menu_asset_management" action="action_asset" sequence="10"/>
@@ -44,6 +50,7 @@
               action="action_asset_dashboard"
               sequence="30"/>
 
+    <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
     <menuitem id="menu_maintenance_schedule"
              name="Schedules"
              parent="menu_maintenance"
@@ -69,5 +76,11 @@
               parent="menu_maintenance"
               action="action_maintenance_reports"
               sequence="50"/>
+
+    <menuitem id="menu_facilities_config"
+              name="Configuration"
+              parent="menu_facilities_root"
+              sequence="99"
+              groups="base.group_system"/>
 
 </odoo>

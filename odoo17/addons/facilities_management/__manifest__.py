@@ -11,20 +11,25 @@
         'sale_management',
         'stock',
         'product',
-        'account',         # Keep this for Monetary fields & Currency
-        # 'web_enterprise',  # <--- REMOVE THIS LINE
+        'account',
     ],
     'data': [
-        # Security and sequences first
+        # Security and sequences first (always recommended to load early)
         'data/sequences.xml',
         'data/predictive_parameters.xml',
         'data/maintenance_cron.xml',
         'data/email_templates.xml',
         'security/facility_management_security.xml',
-        'security/ir.model.access.csv',
+        'security/ir.model.access.csv', # CRITICAL: Ensure access rules for Building, Floor, Room are added here!
 
-        # Core views
-        'views/facility_views.xml',
+        # Core entity views in dependency order (Rooms -> Floors -> Buildings -> Facilities)
+        # Load actions and views for Rooms first, as they are the 'leaf' entities
+        'views/room_views.xml',     # MOVED UP: Defines action_facilities_room
+        'views/floor_views.xml',    # MOVED UP: Defines action_facilities_floor, references action_facilities_room
+        'views/building_views.xml', # MOVED UP: Defines action_facilities_building, references action_facilities_floor
+        'views/facility_views.xml', # This now correctly references action_facilities_building
+
+        # Other core views
         'views/asset_category_views.xml',
         'views/facility_asset_views.xml',
 
@@ -39,12 +44,10 @@
         # Reporting
         'views/maintenance_report_views.xml',
         'reports/maintenance_report.xml',
-        # 'views/asset_dashboard_views.xml', # This might be the Enterprise dashboard, will disable for now
-        'views/asset_dashboard_community.xml', # <--- Keep this for Community dashboard
+        'views/asset_dashboard_community.xml',
 
-        # UI
+        # UI Menus (typically loaded last as they reference actions and models defined in previous files)
         'views/facility_asset_menus.xml',
-        # ... (rest of your data files)
     ],
     'application': True,
     'installable': True,

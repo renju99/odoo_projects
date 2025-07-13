@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Sequence for Maintenance Schedules -->
     <record id="seq_asset_maintenance" model="ir.sequence">
         <field name="name">Asset Maintenance Schedule Reference</field>
         <field name="code">asset.maintenance.schedule</field>
@@ -9,12 +8,43 @@
         <field name="company_id" eval="False"/>
     </record>
 
-    <!-- Sequence for Work Orders -->
     <record id="seq_maintenance_workorder" model="ir.sequence">
         <field name="name">Maintenance Work Order Reference</field>
         <field name="code">maintenance.workorder</field>
         <field name="prefix">WO/</field>
         <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_facility_code" model="ir.sequence">
+        <field name="name">Facility Code</field>
+        <field name="code">facilities.facility</field>
+        <field name="prefix">FAC</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_building_code" model="ir.sequence">
+        <field name="name">Building Code</field>
+        <field name="code">facilities.building</field>
+        <field name="prefix">BLD</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_floor_code" model="ir.sequence">
+        <field name="name">Floor Code</field>
+        <field name="code">facilities.floor</field>
+        <field name="prefix">FLR</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_room_code" model="ir.sequence">
+        <field name="name">Room Code</field>
+        <field name="code">facilities.room</field>
+        <field name="prefix">ROM</field>
+        <field name="padding">4</field>
         <field name="company_id" eval="False"/>
     </record>
 </odoo>

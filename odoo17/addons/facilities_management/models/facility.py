@@ -11,7 +11,7 @@ class Facility(models.Model):
     _rec_name = 'name'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    # Basic Information (already there, but with labels for clarity)
+    # Basic Information
     name = fields.Char(string='Facility Name', required=True, help="The official name of the facility or property.")
     code = fields.Char(string='Facility Code', required=True, copy=False, readonly=True, default='New', help="Unique identifier for the facility, often auto-generated.")
     manager_id = fields.Many2one('hr.employee', string='Facility Manager', tracking=True, help="The employee responsible for managing this facility.")
@@ -67,8 +67,14 @@ class Facility(models.Model):
     documents_ids = fields.Many2many('ir.attachment', string='Facility Documents',
                                     domain="[('res_model','=','facilities.facility')]", help="Attached documents related to the facility (e.g., blueprints, floor plans, certificates).")
 
-    # Relationships (if you want to link to other custom models)
-    # tenant_ids = fields.One2many('facilities.tenant', 'facility_id', string='Tenants') # Example if you have a separate Tenant model
+    # NEW: One2many relationship to Buildings
+    building_ids = fields.One2many('facilities.building', 'facility_id', string='Buildings', help="List of buildings associated with this facility.")
+    building_count = fields.Integer(compute='_compute_building_count', string='Number of Buildings', store=True)
+
+    @api.depends('building_ids')
+    def _compute_building_count(self):
+        for rec in self:
+            rec.building_count = len(rec.building_ids)
 
     @api.model
     def create(self, vals):
@@ -76,5 +82,3 @@ class Facility(models.Model):
             vals['code'] = self.env['ir.sequence'].next_by_code('facilities.facility') or 'New'
         result = super(Facility, self).create(vals)
         return result
-
-    # No need for _register_hook

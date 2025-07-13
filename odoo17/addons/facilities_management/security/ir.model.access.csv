@@ -14,3 +14,9 @@ access_maintenance_workorder_user,Maintenance Workorder User Access,model_mainte
 access_maintenance_workorder_manager,Maintenance Workorder Manager Access,model_maintenance_workorder,base.group_erp_manager,1,1,1,1
 access_maintenance_workorder_assignment,Maintenance Workorder Assignment Access,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
 access_maintenance_workorder_part_line,Maintenance Workorder Part Line Access,model_maintenance_workorder_part_line,,1,1,1,1
+access_facilities_building_user,facilities.building.user,model_facilities_building,base.group_user,1,1,1,0
+access_facilities_building_manager,facilities.building.manager,model_facilities_building,base.group_erp_manager,1,1,1,1
+access_facilities_floor_user,facilities.floor.user,model_facilities_floor,base.group_user,1,1,1,0
+access_facilities_floor_manager,facilities.floor.manager,model_facilities_floor,base.group_erp_manager,1,1,1,1
+access_facilities_room_user,facilities.room.user,model_facilities_room,base.group_user,1,1,1,0
+access_facilities_room_manager,facilities.room.manager,model_facilities_room,base.group_erp_manager,1,1,1,1
