@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_facilities_floor_tree" model="ir.ui.view">
+        <field name="name">facilities.floor.tree</field>
+        <field name="model">facilities.floor</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="level"/>
+                <field name="building_id"/>
+                <field name="facility_id"/>
+                <field name="manager_id"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_facilities_floor_form" model="ir.ui.view">
+        <field name="name">facilities.floor.form</field>
+        <field name="model">facilities.floor</field>
+        <field name="arch" type="xml">
+            <form string="Floor">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" name="%(action_facilities_room)d" type="action" icon="fa-cube">
+                            <field name="room_count" widget="statinfo" string="Rooms"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Floor Number/Name" required="True"/></h1>
+                        <label for="code" class="oe_edit_only"/>
+                        <h2><field name="code" placeholder="Floor Code" required="True" readonly="1"/></h2>
+                    </div>
+
+                    <group>
+                        <group string="Floor Details">
+                            <field name="building_id" required="True"/>
+                            <field name="facility_id" readonly="1"/>
+                            <field name="manager_id"/>
+                            <field name="level"/>
+                            <field name="area_sqm"/>
+                        </group>
+                        <group string="Description">
+                            <field name="description"/>
+                            <field name="notes"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Rooms" name="rooms_page">
+                            <field name="room_ids">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="room_type"/>
+                                    <field name="capacity"/>
+                                    <field name="manager_id"/>
+                                    <field name="active" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        </notebook>
+
+                    <field name="active" groups="base.group_no_one"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_facilities_floor_search" model="ir.ui.view">
+        <field name="name">facilities.floor.search</field>
+        <field name="model">facilities.floor</field>
+        <field name="arch" type="xml">
+            <search string="Floors">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="building_id"/>
+                <field name="facility_id"/>
+                <field name="manager_id"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Building" name="groupby_building" context="{'group_by':'building_id'}"/>
+                    <filter string="Facility" name="groupby_facility" context="{'group_by':'facility_id'}"/>
+                    <filter string="Manager" name="groupby_manager" context="{'group_by':'manager_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_facilities_floor" model="ir.actions.act_window">
+        <field name="name">Floors</field>
+        <field name="res_model">facilities.floor</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Floor
+            </p>
+        </field>
+    </record>
+
+</odoo>

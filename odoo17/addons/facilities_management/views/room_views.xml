@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_facilities_room_tree" model="ir.ui.view">
+        <field name="name">facilities.room.tree</field>
+        <field name="model">facilities.room</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="room_type"/>
+                <field name="floor_id"/>
+                <field name="building_id"/>
+                <field name="facility_id"/>
+                <field name="manager_id"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_facilities_room_form" model="ir.ui.view">
+        <field name="name">facilities.room.form</field>
+        <field name="model">facilities.room</field>
+        <field name="arch" type="xml">
+            <form string="Room">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Room Name/Number" required="True"/></h1>
+                        <label for="code" class="oe_edit_only"/>
+                        <h2><field name="code" placeholder="Room Code" required="True" readonly="1"/></h2>
+                    </div>
+
+                    <group>
+                        <group string="Room Details">
+                            <field name="floor_id" required="True"/>
+                            <field name="building_id" readonly="1"/>
+                            <field name="facility_id" readonly="1"/>
+                            <field name="manager_id"/>
+                            <field name="room_type"/>
+                            <field name="capacity"/>
+                            <field name="area_sqm"/>
+                        </group>
+                        <group string="Usage &amp; Notes">
+                            <field name="usage"/>
+                            <field name="notes"/>
+                        </group>
+                    </group>
+                    <field name="active" groups="base.group_no_one"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_facilities_room_search" model="ir.ui.view">
+        <field name="name">facilities.room.search</field>
+        <field name="model">facilities.room</field>
+        <field name="arch" type="xml">
+            <search string="Rooms">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="room_type"/>
+                <field name="floor_id"/>
+                <field name="building_id"/>
+                <field name="facility_id"/>
+                <field name="manager_id"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Floor" name="groupby_floor" context="{'group_by':'floor_id'}"/>
+                    <filter string="Building" name="groupby_building" context="{'group_by':'building_id'}"/>
+                    <filter string="Facility" name="groupby_facility" context="{'group_by':'facility_id'}"/>
+                    <filter string="Room Type" name="groupby_room_type" context="{'group_by':'room_type'}"/>
+                    <filter string="Manager" name="groupby_manager" context="{'group_by':'manager_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_facilities_room" model="ir.actions.act_window">
+        <field name="name">Rooms</field>
+        <field name="res_model">facilities.room</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Room
+            </p>
+        </field>
+    </record>
+
+</odoo>
