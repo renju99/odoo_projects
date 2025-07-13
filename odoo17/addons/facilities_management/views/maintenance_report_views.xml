@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_maintenance_reports" model="ir.actions.act_window">
+        <field name="name">Maintenance Reports</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="views" eval="[(False, 'pivot'), (False, 'graph')]"/>
+    </record>
+
+    <record id="view_maintenance_pivot" model="ir.ui.view">
+        <field name="name">maintenance.pivot</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="asset_id" type="row"/>
+                <field name="maintenance_type" type="col"/>
+                <field name="active" type="col"/> </pivot>
+        </field>
+    </record>
+
+    <record id="view_maintenance_graph" model="ir.ui.view">
+        <field name="name">maintenance.graph</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+                </graph>
+        </field>
+    </record>
+</odoo>

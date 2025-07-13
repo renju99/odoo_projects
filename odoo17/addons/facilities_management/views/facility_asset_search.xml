@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- Place your records inside the <data> tag -->
+        <record id="view_facility_asset_search" model="ir.ui.view">
+            <field name="name">facilities.asset.search</field>
+            <field name="model">facilities.asset</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name"/>
+                    <field name="asset_tag"/>
+                    <field name="serial_number"/>
+                    <field name="condition"/>
+                    <field name="warranty_status"/>
+                </search>
+            </field>
+        </record>
+    </data>
+</odoo>

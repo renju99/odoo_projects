@@ -1,0 +1,2040 @@
+--- File: __manifest__.py ---
+# __manifest__.py
+{
+    'name': 'Facilities Management',
+    'version': '2.0.0',
+    'depends': [
+        'base',
+        'mail',
+        'hr',
+        'web',
+        'maintenance',
+        'sale_management',
+        'stock',
+        'product',
+    ],
+    'data': [
+        # Security and sequences first
+        'data/sequences.xml',
+        'data/predictive_parameters.xml',
+        'data/maintenance_cron.xml',
+        'data/email_templates.xml',
+        'security/facility_management_security.xml',
+        'security/ir.model.csv',
+        'security/ir.model.access.csv',
+
+        # Core views
+        'views/facility_views.xml',
+        'views/asset_category_views.xml',
+        'views/facility_asset_views.xml',
+
+        # Maintenance features
+        'views/asset_maintenance_schedule_views.xml',
+        'views/asset_maintenance_calendar_views.xml',
+        'views/maintenance_workorder_views.xml',
+        'views/asset_maintenance_scheduled_actions.xml',
+        'views/predictive_algorithm_views.xml',
+        'views/maintenance_workorder_part_line_views.xml',
+        'views/product_views.xml',
+
+        # Reporting
+        'views/maintenance_report_views.xml',
+        'reports/maintenance_report.xml',
+        'views/asset_dashboard_views.xml',
+        'views/asset_dashboard_community.xml',
+
+        # UI
+        'views/facility_asset_menus.xml',
+        # ... (rest of your data files)
+    ],
+    'application': True,
+    'installable': True,
+    'auto_install': False,
+    'license': 'LGPL-3', # It's good practice to define a license
+}
+
+--- File: facilities_management_export.txt ---
+
+
+--- File: __init__.py ---
+from . import models
+
+--- File: export_script.py ---
+import os
+
+def export_folder_to_text(folder_path, output_filename="facilities_management_export.txt", exclude_dirs=None):
+    if exclude_dirs is None:
+        # Common directories to exclude in Odoo/Python projects
+        exclude_dirs = ["__pycache__", ".git", ".idea", "venv", "node_modules"]
+
+    with open(output_filename, "w", encoding="utf-8") as outfile:
+        for root, dirs, files in os.walk(folder_path):
+            # Modify dirs in-place to skip excluded directories
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
+
+            for file in files:
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, folder_path)
+
+                outfile.write(f"--- File: {relative_path} ---\n")
+                try:
+                    with open(file_path, "r", encoding="utf-8") as infile:
+                        outfile.write(infile.read())
+                    outfile.write("\n\n")  # Add a separator for readability
+                except Exception as e:
+                    outfile.write(f"--- Error reading {relative_path}: {e} ---\n\n")
+
+if __name__ == "__main__":
+    current_folder = os.path.dirname(os.path.abspath(__file__)) # Gets the script's directory
+    export_folder_to_text(current_folder)
+    print(f"Code from '{current_folder}' exported to facilities_management_export.txt")
+
+--- File: controllers/mobile_api.py ---
+
+
+--- File: controllers/__init__.py ---
+
+
+--- File: reports/maintenance_report.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_asset_maintenance" model="ir.actions.report">
+        <field name="name">Asset Maintenance Report</field>
+        <field name="model">facilities.asset</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">facilities_management.report_asset_maintenance_template</field>
+        <field name="report_file">facilities_management.report_asset_maintenance_template</field>
+        <field name="print_report_name">'Maintenance Report - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="facilities_management.model_facilities_asset"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_asset_maintenance_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Maintenance Report for <span t-field="o.name"/></h2>
+                        <div class="row mt32 mb32">
+                            <div class="col-6">
+                                <strong>Asset Name:</strong> <span t-field="o.name"/><br/>
+                                <strong>Asset Tag:</strong> <span t-field="o.asset_tag"/><br/>
+                                <strong>Serial Number:</strong> <span t-field="o.serial_number"/><br/>
+                                <strong>Category:</strong> <span t-field="o.category_id.name"/><br/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Facility:</strong> <span t-field="o.facility_id.name"/><br/>
+                                <strong>Responsible Person:</strong> <span t-field="o.responsible_id.name"/><br/>
+                                <strong>Condition:</strong> <span t-field="o.condition"/><br/>
+                                <strong>Location:</strong> <span t-field="o.location"/><br/>
+                            </div>
+                        </div>
+
+                        <h3>Maintenance History</h3>
+                        <table class="table table-sm mt-4">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Cost</th>
+                                    <th>Performed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.maintenance_ids" t-as="maintenance">
+                                    <td><span t-field="maintenance.maintenance_date"/></td>
+                                    <td><span t-field="maintenance.maintenance_type"/></td>
+                                    <td><span t-field="maintenance.description"/></td>
+                                    <td><span t-field="maintenance.cost"/></td>
+                                    <td><span t-field="maintenance.performed_by.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-if="not o.maintenance_ids">No maintenance records found for this asset.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
+
+--- File: reports/maintenance_analysis.py ---
+# reports/maintenance_analysis.py
+from odoo import models, api
+
+
+class MaintenanceReport(models.AbstractModel):
+    _name = 'report.facilities_management.maintenance_analysis'
+
+    def _get_cost_analysis(self, assets):
+        # Implement analytical reporting
+        pass
+
+--- File: reports/__init__.py ---
+
+
+--- File: demo/facility_demo.xml ---
+
+
+--- File: models/maintenance_workorder_part_line.py ---
+# -*- coding: utf-8 -*-
+from odoo import fields, models, api, _
+from odoo.exceptions import ValidationError
+
+class MaintenanceWorkOrderPartLine(models.Model):
+    _name = 'maintenance.workorder.part_line'
+    _description = 'Maintenance Work Order Part Line'
+
+    workorder_id = fields.Many2one('maintenance.workorder', string='Work Order', required=True, ondelete='cascade')
+    product_id = fields.Many2one(
+        'product.product',
+        string='Product',
+        required=True,
+        domain=[('type', 'in', ['product', 'consu'])],
+        context={'default_type': 'product'}
+    )
+    quantity = fields.Float(string='Quantity', required=True, default=1.0)
+    uom_id = fields.Many2one('uom.uom', string='Unit of Measure', related='product_id.uom_id', readonly=True)
+    notes = fields.Char(string='Notes')
+
+    @api.constrains('quantity')
+    def _check_quantity(self):
+        for record in self:
+            if record.quantity <= 0:
+                raise ValidationError(_('Quantity must be positive for parts used.'))
+
+--- File: models/asset.py ---
+# models/asset.py
+from odoo import models, fields, api
+
+
+class FacilityAsset(models.Model):
+    _name = 'facilities.asset'
+    _description = 'Facility Asset'
+    _rec_name = 'name'
+
+    name = fields.Char('Asset Name', required=True)
+    asset_tag = fields.Char(string="Asset Tag")
+    serial_number = fields.Char(string="Serial Number")
+    facility_id = fields.Many2one('facilities.facility', string='Project', required=True)
+    asset_code = fields.Char('Asset Code', size=20)
+    # CORRECTED LINE: Changed 'facilities.asset.maintenance' to 'asset.maintenance.schedule'
+    maintenance_ids = fields.One2many('asset.maintenance.schedule', 'asset_id', string='Maintenance Schedules')
+    depreciation_ids = fields.One2many('facilities.asset.depreciation', 'asset_id', string='Depreciation Records')
+    attachment_ids = fields.Many2many('ir.attachment', string='Documents',
+                                    domain="[('res_model','=','facilities.asset')]")
+
+    category_id = fields.Many2one('facilities.asset.category', string='Category')
+    purchase_date = fields.Date('Purchase Date')
+    condition = fields.Selection([
+        ('new', 'New'),
+        ('good', 'Good'),
+        ('fair', 'Fair'),
+        ('poor', 'Poor'),
+    ], default='good', string='Condition')
+    responsible_id = fields.Many2one('res.users', string='Responsible Person')
+    location = fields.Char('Location')
+    warranty_expiration_date = fields.Date('Warranty Expiration Date')
+    warranty_status = fields.Selection([
+        ('valid', 'Valid'),
+        ('expired', 'Expired'),
+        ('none', 'No Warranty')
+    ], string='Warranty Status', compute='_compute_warranty_status', store=True)
+    image_1920 = fields.Image("Image")
+    notes = fields.Text('Notes')
+    active = fields.Boolean('Active', default=True)
+
+    # New field for dashboard compatibility
+    is_enterprise = fields.Boolean(
+        string="Enterprise Mode",
+        compute='_compute_is_enterprise',
+        help="Technical field to check if enterprise features are available"
+    )
+
+    @api.depends('warranty_expiration_date')
+    def _compute_warranty_status(self):
+        today = fields.Date.today()
+        for asset in self:
+            if not asset.warranty_expiration_date:
+                asset.warranty_status = 'none'
+            elif asset.warranty_expiration_date >= today:
+                asset.warranty_status = 'valid'
+            else:
+                asset.warranty_status = 'expired'
+
+    def _compute_is_enterprise(self):
+        """Check if web_enterprise module is installed"""
+        enterprise_installed = self.env['ir.module.module'].search_count([
+            ('name', '=', 'web_enterprise'),
+            ('state', '=', 'installed')
+        ])
+        for asset in self:
+            asset.is_enterprise = enterprise_installed
+
+    def name_get(self):
+        return [(record.id, f"{record.name} [{record.asset_code}]") for record in self]
+
+    def action_open_dashboard(self):
+        """Open appropriate dashboard view based on availability of enterprise"""
+        self.ensure_one()
+        if self.is_enterprise:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Asset Dashboard (Enterprise)',
+                'res_model': 'facilities.asset',
+                'view_mode': 'dashboard',
+                'views': [(False, 'dashboard')],
+                'target': 'current',
+                'context': dict(self.env.context),
+            }
+        else:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Asset Dashboard (Community)',
+                'res_model': 'facilities.asset',
+                'view_mode': 'graph,pivot',
+                'views': [
+                    (False, 'graph'),
+                    (False, 'pivot')
+                ],
+                'target': 'current',
+                'context': dict(self.env.context),
+            }
+
+--- File: models/workorder_type.py ---
+# models/workorder_type.py
+
+from odoo import models, fields
+
+class WorkorderType(models.Model):
+    _name = 'workorder.type'
+    _description = 'Type of Maintenance Work Order'
+    _order = 'name'
+
+    name = fields.Char(string='Type Name', required=True, help="A descriptive name for the work order type (e.g., 'Routine Inspection', 'Emergency Repair').")
+    description = fields.Text(string='Description', help="Detailed description of this work order type.")
+
+    _sql_constraints = [
+        ('name_uniq', 'unique (name)', 'The work order type name must be unique!'),
+    ]
+
+--- File: models/predictive_algorithm.py ---
+# models/predictive_algorithm.py
+from odoo import models, fields
+
+
+class PredictiveAlgorithm(models.Model):
+    _name = 'predictive.algorithm'
+    _description = 'Predictive Maintenance Algorithms'
+
+    name = fields.Char(required=True, string="Algorithm Name")
+    model_type = fields.Selection(
+        selection=[
+            ('linear', 'Linear Regression'),
+            ('random_forest', 'Random Forest'),
+            ('neural_net', 'Neural Network'),
+            ('svm', 'Support Vector Machine')
+        ],
+        string="Model Type",
+        required=True
+    )
+    asset_type_ids = fields.Many2many(
+        comodel_name='ir.model',
+        relation='algorithm_asset_type_rel',
+        column1='algorithm_id',
+        column2='model_id',
+        string="Applicable Asset Types",
+        domain=[('model', '=like', 'facilities.%')]
+    )
+    active = fields.Boolean(default=True)
+    code_implementation = fields.Text(
+        string="Custom Code",
+        help="Paste Python implementation for custom algorithms"
+    )
+
+--- File: models/asset_maintenance_schedule.py ---
+# models/asset_maintenance_schedule.py
+
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+from datetime import datetime, timedelta, date # Ensure 'date' is imported
+
+class AssetMaintenanceSchedule(models.Model):
+    _name = 'asset.maintenance.schedule'
+    _description = 'Asset Maintenance Schedule'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    name = fields.Char(string='Schedule Name', required=True, tracking=True)
+    asset_id = fields.Many2one('facilities.asset', string='Asset', required=True, tracking=True)
+    maintenance_type = fields.Selection([
+        ('preventive', 'Preventive'),
+        ('corrective', 'Corrective'),
+        ('predictive', 'Predictive'),
+        ('inspection', 'Inspection'),
+    ], string='Maintenance Type', required=True, default='preventive', tracking=True)
+
+    interval_number = fields.Integer(string='Repeat Every', default=1, required=True, tracking=True)
+    interval_type = fields.Selection([
+        ('daily', 'Day(s)'),
+        ('weekly', 'Week(s)'),
+        ('monthly', 'Month(s)'),
+        ('quarterly', 'Quarter(s)'),
+        ('yearly', 'Year(s)'),
+    ], string='Recurrence', default='monthly', required=True, tracking=True)
+
+    last_maintenance_date = fields.Date(string='Last Maintenance Date', tracking=True)
+    next_maintenance_date = fields.Date(string='Next Scheduled Date', compute='_compute_next_maintenance_date', store=True, tracking=True)
+    notes = fields.Text(string='Notes')
+
+    active = fields.Boolean(string='Active', default=False, tracking=True)
+
+    @api.depends('last_maintenance_date', 'interval_number', 'interval_type')
+    def _compute_next_maintenance_date(self):
+        for rec in self:
+            if rec.last_maintenance_date and rec.interval_number > 0:
+                current_date = rec.last_maintenance_date
+                try:
+                    from dateutil.relativedelta import relativedelta
+                except ImportError:
+                    raise UserError(_("The 'python-dateutil' library is not installed. Please install it ('pip install python-dateutil') for accurate date calculations."))
+
+                if rec.interval_type == 'daily':
+                    rec.next_maintenance_date = current_date + relativedelta(days=rec.interval_number)
+                elif rec.interval_type == 'weekly':
+                    rec.next_maintenance_date = current_date + relativedelta(weeks=rec.interval_number)
+                elif rec.interval_type == 'monthly':
+                    rec.next_maintenance_date = current_date + relativedelta(months=rec.interval_number)
+                elif rec.interval_type == 'quarterly':
+                    rec.next_maintenance_date = current_date + relativedelta(months=rec.interval_number * 3)
+                elif rec.interval_type == 'yearly':
+                    rec.next_maintenance_date = current_date + relativedelta(years=rec.interval_number)
+                else:
+                    rec.next_maintenance_date = False
+            else:
+                rec.next_maintenance_date = False
+
+    def _generate_preventive_workorders(self):
+        today = fields.Date.today()
+        # Search for active schedules whose 'next_maintenance_date'
+        # is between today and 7 days from now (inclusive).
+        due_schedules = self.search([
+            ('active', '=', True),
+            ('next_maintenance_date', '>=', today), # Due today or in the future
+            ('next_maintenance_date', '<=', today + timedelta(days=7)), # Due within the next 7 days
+        ])
+
+        for schedule in due_schedules:
+            # Check if a work order for THIS specific 'next_maintenance_date'
+            # already exists and is not yet 'done' or 'cancelled'.
+            existing_workorder = self.env['maintenance.workorder'].search([
+                ('schedule_id', '=', schedule.id),
+                ('start_date', '=', schedule.next_maintenance_date), # Assuming start_date is the planned due date
+                ('status', 'not in', ['done', 'cancelled']),
+            ], limit=1)
+
+            if not existing_workorder:
+                self.env['maintenance.workorder'].create({
+                    'name': _('Preventive Work Order for %s (%s)') % (schedule.asset_id.name, schedule.name),
+                    'asset_id': schedule.asset_id.id,
+                    'schedule_id': schedule.id,
+                    'work_order_type': 'preventive',
+                    'start_date': schedule.next_maintenance_date, # Work order is planned for the actual due date
+                    'status': 'draft', # Work order starts in draft
+                })
+                # IMPORTANT: We DO NOT update schedule.last_maintenance_date here.
+                # It should be updated when the associated work order is completed.
+                # This will be handled in the maintenance.workorder model's 'action_complete' method.
+
+--- File: models/__init__.py ---
+# models/__init__.py
+import logging
+from odoo import api, SUPERUSER_ID
+
+_logger = logging.getLogger(__name__)
+
+# Standard way to import models in Odoo modules
+# Ensure all your model files are listed here in a logical dependency order.
+# facility.py should generally be imported early if other models depend on it.
+from . import facility
+from . import asset_category
+from . import asset
+from . import asset_maintenance_schedule
+from . import maintenance_workorder
+from . import asset_depreciation
+from . import predictive_algorithm
+from . import predictive_maintenance
+from . import maintenance_workorder_assignment
+from . import hr_employee
+from . import maintenance_workorder_part_line
+from . import product
+
+# The pre_init_hook can remain if its logic is still desired
+def pre_init_hook(cr):
+    """Ensure clean slate"""
+    env = api.Environment(cr, SUPERUSER_ID, {})
+    _logger.info("Running pre_init_hook for facilities_management...")
+    try:
+        # Check if the tables/models exist before trying to delete from ir.model
+        # This prevents errors if running for the first time or if models aren't registered yet
+        cr.execute("""
+            DELETE FROM ir_model WHERE model = 'facilities.facility';
+            DELETE FROM ir_model_data WHERE model = 'ir.model' AND name LIKE 'model_facilities%';
+        """)
+        _logger.info("Cleaned up old facilities.facility model entries (if any).")
+    except Exception as e:
+        _logger.warning(f"Failed to run pre_init_hook cleanup: {e}")
+
+--- File: models/maintenance_workorder_assignment.py ---
+# models/maintenance_workorder_assignment.py
+from odoo import models, fields
+
+class MaintenanceWorkOrderAssignment(models.Model):
+    _name = 'maintenance.workorder.assignment'
+    _description = 'Maintenance Work Order Technician Assignment'
+    _rec_name = 'technician_id' # Display technician name in relation
+
+    workorder_id = fields.Many2one(
+        'maintenance.workorder',
+        string='Work Order',
+        required=True,
+        ondelete='cascade' # If work order is deleted, assignments are deleted
+    )
+    technician_id = fields.Many2one(
+        'hr.employee',
+        string="Technician",
+        required=True
+    )
+    start_date = fields.Datetime(string="Start Date", default=fields.Datetime.now)
+    end_date = fields.Datetime(string="End Date")
+
+    _sql_constraints = [
+        ('unique_technician_per_workorder_date', 'UNIQUE(workorder_id, technician_id, start_date)', 'A technician can only be assigned once to the same work order at the exact same start time. Please adjust the start date/time or add a new assignment.'),
+    ]
+
+--- File: models/asset_depreciation.py ---
+from odoo import models, fields
+
+class AssetDepreciation(models.Model):
+    _name = 'facilities.asset.depreciation'
+    _description = 'Asset Depreciation Record'
+
+    asset_id = fields.Many2one('facilities.asset', string='Asset', required=True, ondelete='cascade')
+    depreciation_date = fields.Date('Depreciation Date', required=True)
+    value_before = fields.Float('Value Before Depreciation')
+    depreciation_amount = fields.Float('Depreciation Amount')
+    value_after = fields.Float('Value After Depreciation')
+
+
+--- File: models/facility.py ---
+# models/facility.py
+from odoo import models, fields, api
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+class Facility(models.Model):
+    _name = 'facilities.facility'
+    _description = 'Facility Management'
+    # _auto = True # _auto is True by default for new models, no need to explicitly set it unless you want to set it to False
+
+    name = fields.Char(required=True)
+    code = fields.Char(string='Facility Code', required=True, copy=False, readonly=True, default='New')
+    manager_id = fields.Many2one('hr.employee', string='Facility Manager', tracking=True)
+    active = fields.Boolean(default=True)
+
+    @api.model
+    def create(self, vals):
+        if vals.get('code', 'New') == 'New':
+            vals['code'] = self.env['ir.sequence'].next_by_code('facilities.facility') or 'New'
+        result = super(Facility, self).create(vals)
+        return result
+
+    # REMOVE THE ENTIRE _register_hook METHOD
+    # @api.model
+    # def _register_hook(self):
+    #     """Nuclear option for registration"""
+    #     super()._register_hook()
+    #     if not hasattr(self.pool, self._name):
+    #         _logger.warning("FORCING model registration for %s", self._name)
+    #         self.pool[self._name] = self
+    #         self.env.registry[self._name] = self
+    #         # Force field registration
+    #         for fname, field in self._fields.items():
+    #             field.model_name = self._name
+
+--- File: models/__post_init__.py ---
+# models/__post_init__.py
+from odoo import api, SUPERUSER_ID, fields
+
+
+def migrate(cr, version):
+    env = api.Environment(cr, SUPERUSER_ID, {})
+
+    # 1. Maintain existing technician assignment
+    env['maintenance.workorder'].search([]).write({
+        'technician_id': env.ref('base.user_admin').employee_id.id
+    })
+
+    # 2. Predictive Maintenance Defaults
+    _setup_predictive_parameters(env)
+
+    # 4. Migrate old schedules to new format
+    _migrate_legacy_schedules(env)
+
+
+def _setup_predictive_parameters(env):
+    """Configure default predictive maintenance thresholds"""
+    params = env['ir.config_parameter']
+
+    params.set_param('facilities.predictive.usage_threshold', '500')  # Hours/miles
+    params.set_param('facilities.predictive.time_threshold', '30')  # Days
+    # Removed: params.set_param('facilities.predictive.iot_variance', '0.15')  # 15% tolerance
+
+    # Create default algorithm mapping
+    env['predictive.algorithm'].create({
+        'name': 'Default Linear Model',
+        'model_type': 'linear',
+        'asset_type_ids': [(4, env.ref('facilities_management.model_facilities_asset').id)]
+    })
+
+
+def _migrate_legacy_schedules(env):
+    """Convert old schedules to predictive format"""
+    legacy_schedules = env['asset.maintenance.schedule'].search([
+        ('predictive_algorithm', '=', False)
+    ])
+
+    legacy_schedules.write({
+        'predictive_algorithm': 'time',
+        'time_threshold': 30  # Default 30-day intervals
+    })
+
+--- File: models/maintenance_team.py ---
+# models/maintenance_team.py
+from odoo import fields, models, api
+
+class MaintenanceTeam(models.Model):
+    _name = 'maintenance.team'
+    _description = 'Maintenance Team'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    name = fields.Char(string="Team Name", required=True)
+    leader_id = fields.Many2one(
+        'hr.employee', string="Team Leader",
+        domain="[('work_email', '!=', False)]",
+        help="The employee responsible for this maintenance team."
+    )
+    member_ids = fields.Many2many(
+        'hr.employee', 'maintenance_team_employee_rel',
+        'team_id', 'employee_id', string="Team Members",
+        domain="[('work_email', '!=', False)]",
+        help="Employees who are part of this maintenance team."
+    )
+    request_ids = fields.One2many(
+        'maintenance.request', 'maintenance_team_id', string="Maintenance Requests"
+    )
+    workorder_count = fields.Integer(
+        string="Number of Requests", compute='_compute_workorder_count'
+    )
+
+    @api.depends('request_ids')
+    def _compute_workorder_count(self):
+        for team in self:
+            team.workorder_count = len(team.request_ids)
+
+--- File: models/asset_category.py ---
+from odoo import models, fields
+
+class AssetCategory(models.Model):
+    _name = 'facilities.asset.category'
+    _description = 'Asset Category'
+
+    name = fields.Char('Category Name', required=True)
+    description = fields.Text('Description')
+    active = fields.Boolean('Active', default=True)  # Add this line
+
+
+--- File: models/hr_employee.py ---
+# -*- coding: utf-8 -*-
+from odoo import fields, models
+
+class HrEmployee(models.Model):
+    _inherit = 'hr.employee'
+
+    is_technician = fields.Boolean(string="Is Technician", default=False,
+                                   help="Check this box if the employee is a technician eligible for work orders.")
+
+--- File: models/maintenance_workorder.py ---
+# models/maintenance_workorder.py
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+# from datetime import datetime # Ensure datetime is imported if not already, for fields.Datetime.now()
+
+
+class MaintenanceWorkOrder(models.Model):
+    _name = 'maintenance.workorder'
+    _description = 'Maintenance Work Order'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    # Existing fields
+    name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True, default=lambda self: _('New'))
+    asset_id = fields.Many2one('facilities.asset', string='Asset', required=True)
+    schedule_id = fields.Many2one('asset.maintenance.schedule', string='Maintenance Schedule')
+    work_order_type = fields.Selection([
+        ('preventive', 'Preventive'),
+        ('corrective', 'Corrective'),
+        ('predictive', 'Predictive'),
+        ('inspection', 'Inspection'),
+    ], string='Type', default='corrective', required=True)
+    technician_id = fields.Many2one('hr.employee', string='Primary Technician', domain="[('is_technician', '=', True)]")
+    start_date = fields.Datetime(string='Scheduled Start Date')
+    end_date = fields.Datetime(string='Scheduled End Date')
+    actual_start_date = fields.Datetime(string='Actual Start Date', readonly=True)
+    actual_end_date = fields.Datetime(string='Actual End Date', readonly=True)
+    status = fields.Selection([
+        ('draft', 'Draft'),
+        ('in_progress', 'In Progress'),
+        ('done', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ], default='draft', string='Status', tracking=True)
+    assignment_ids = fields.One2many('maintenance.workorder.assignment', 'workorder_id', string='Assignments')
+    priority = fields.Selection([
+        ('0', 'Very Low'),
+        ('1', 'Low'),
+        ('2', 'Normal'),
+        ('3', 'High'),
+    ], string='Priority', default='1')
+
+    # NEW FIELDS ADDED HERE:
+    description = fields.Text(string='Work Order Description')
+    work_done = fields.Text(string='Work Done Notes')
+    parts_used_ids = fields.One2many('maintenance.workorder.part_line', 'workorder_id', string='Parts Used')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', _('New')) == _('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.workorder') or _('New')
+        return super().create(vals_list)
+
+    def action_start_progress(self):
+        """Moves work order to 'In Progress' state and sets actual start date."""
+        for rec in self:
+            if rec.status == 'draft':
+                rec.write({
+                    'status': 'in_progress',
+                    'actual_start_date': fields.Datetime.now(),
+                })
+            else:
+                raise UserError(_("Work order must be in 'Draft' state to start progress."))
+
+    def action_complete(self):
+        """Moves work order to 'Completed' state and sets actual end date."""
+        for rec in self:
+            if rec.status == 'in_progress':
+                rec.write({
+                    'status': 'done',
+                    'actual_end_date': fields.Datetime.now(),
+                })
+                # NEW LOGIC: Update the last_maintenance_date on the associated schedule
+                if rec.schedule_id and rec.actual_end_date:
+                    # Convert datetime to date, as last_maintenance_date is a Date field
+                    rec.schedule_id.last_maintenance_date = rec.actual_end_date.date()
+            else:
+                raise UserError(_("Work order must be 'In Progress' to complete."))
+
+    def action_cancel(self):
+        """Moves work order to 'Cancelled' state."""
+        for rec in self:
+            if rec.status not in ('done', 'cancelled'):
+                rec.write({'status': 'cancelled'})
+            else:
+                raise UserError(_("Cannot cancel a completed or already cancelled work order."))
+
+    def action_reset_to_draft(self):
+        """Resets a completed or cancelled work order back to 'Draft'."""
+        for rec in self:
+            if rec.status in ('done', 'cancelled'):
+                rec.write({
+                    'status': 'draft',
+                    'actual_start_date': False,
+                    'actual_end_date': False,
+                })
+            else:
+                raise UserError(_("Only completed or cancelled work orders can be reset to draft."))
+
+    @api.onchange('asset_id')
+    def _onchange_asset_id(self):
+        if self.asset_id:
+            # Set default technician from asset's responsible person if not already set
+            if self.asset_id.responsible_id and not self.technician_id:
+                # Find the hr.employee record linked to the res.users responsible_id
+                employee = self.env['hr.employee'].search([('user_id', '=', self.asset_id.responsible_id.id)], limit=1)
+                if employee:
+                    self.technician_id = employee.id
+
+    # ... (You might have other methods here)
+
+--- File: models/product.py ---
+# -*- coding: utf-8 -*-
+from odoo import models, fields
+
+
+class ProductProduct(models.Model):
+    _inherit = 'product.product'
+
+    service_policy = fields.Char(compute='_compute_dummy', store=False)
+    service_tracking = fields.Selection(
+        selection=[('no', 'No Tracking')],
+        default='no',
+        compute='_compute_dummy',
+        store=False
+    )
+
+    def _compute_dummy(self):
+        for record in self:
+            record.service_policy = False
+            record.service_tracking = 'no'
+
+--- File: models/maintenance_request.py ---
+# models/maintenance_request.py
+from odoo import fields, models, api
+from odoo.exceptions import UserError
+from datetime import datetime
+
+
+class MaintenanceRequest(models.Model):
+    # CORRECTED LINE: Inherit from maintenance.request and mail.thread, mail.activity.mixin
+    _inherit = ['maintenance.request', 'mail.thread', 'mail.activity.mixin']
+    _description = 'Maintenance Request Extension' # Optional: You can keep or change this description
+
+    name = fields.Char(string="Request Title", required=True)
+    description = fields.Text(string="Description of the issue")
+    requestor_id = fields.Many2one(
+        'res.partner', string="Requested By",
+        default=lambda self: self.env.user.partner_id.id, required=True
+    )
+    facility_id = fields.Many2one(
+        'facilities.facility', string="Facility", required=True,
+        ondelete='restrict'
+    )
+    asset_id = fields.Many2one(
+        'facilities.asset', string="Asset",
+        domain="[('facility_id', '=', facility_id)]", ondelete='restrict'
+    )
+    category_id = fields.Many2one(
+        'maintenance.request.category', string="Category",
+        ondelete='set null'
+    )
+    date_requested = fields.Datetime(
+        string="Request Date", default=fields.Datetime.now, readonly=True
+    )
+    priority = fields.Selection([
+        ('0', 'Low'),
+        ('1', 'Normal'),
+        ('2', 'High'),
+        ('3', 'Urgent')
+    ], string="Priority", default='1', tracking=True)
+
+    assigned_to_id = fields.Many2one(
+        'hr.employee', string="Assigned To", tracking=True,
+        domain="[('work_email', '!=', False)]",
+        help="The individual technician assigned to this request."
+    )
+
+    maintenance_team_id = fields.Many2one(
+        'maintenance.team', string="Maintenance Team", tracking=True,
+        ondelete='set null',
+        required=False,  # <--- Add this line
+        help="The team assigned to handle this maintenance request."
+    )
+
+    status = fields.Selection([
+        ('new', 'New'),
+        ('assigned', 'Assigned'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+        ('cancelled', 'Cancelled')
+    ], string="Status", default='new', tracking=True)
+
+    date_closed = fields.Datetime(string="Close Date")
+    workorder_id = fields.Many2one(
+        'maintenance.workorder', string="Related Work Order", copy=False,
+        help="Work Order created for this request."
+    )
+
+    # --- START OF NEW/MODIFIED CODE FOR STAGE_ID ---
+    stage_id = fields.Many2one(
+        'maintenance.request.stage', string='Stage',
+        compute='_compute_stage_id', store=True, readonly=True,
+        help="Technical field for compatibility with standard Odoo maintenance module."
+    )
+
+    @api.depends('status')
+    def _compute_stage_id(self):
+        """
+        Maps custom 'status' values to standard 'maintenance.request.stage' records.
+        These 'maintenance.stage_X' are external IDs from the core 'maintenance' module.
+        'raise_if_not_found=False' prevents errors if a stage isn't found,
+        allowing the field to be False.
+        """
+        for rec in self:
+            if rec.status == 'new':
+                rec.stage_id = self.env.ref('maintenance.stage_0', raise_if_not_found=False) # e.g., New/Draft
+            elif rec.status == 'assigned' or rec.status == 'in_progress':
+                rec.stage_id = self.env.ref('maintenance.stage_1', raise_if_not_found=False) # e.g., In Progress
+            elif rec.status == 'resolved':
+                rec.stage_id = self.env.ref('maintenance.stage_2', raise_if_not_found=False) # e.g., Done
+            elif rec.status in ['closed', 'cancelled']:
+                rec.stage_id = self.env.ref('maintenance.stage_3', raise_if_not_found=False) # e.g., Cancelled/Closed
+            else:
+                rec.stage_id = False # Fallback if no mapping or if stage not found
+    # --- END OF NEW/MODIFIED CODE FOR STAGE_ID ---
+
+
+    @api.onchange('facility_id')
+    def _onchange_facility_id(self):
+        if self.facility_id:
+            if self.asset_id and self.asset_id.facility_id != self.facility_id:
+                self.asset_id = False
+        else:
+            self.asset_id = False
+
+    @api.onchange('maintenance_team_id')
+    def _onchange_maintenance_team_id(self):
+        if self.maintenance_team_id and self.assigned_to_id and \
+                self.assigned_to_id not in self.maintenance_team_id.member_ids and \
+                self.assigned_to_id != self.maintenance_team_id.leader_id:
+            self.assigned_to_id = False
+
+    def action_create_workorder(self):
+        self.ensure_one()
+        if self.workorder_id:
+            raise UserError("A work order already exists for this request.")
+
+        workorder_vals = {
+            'request_id': self.id,
+            'name': self.env['ir.sequence'].next_by_code('maintenance.workorder') or 'New',
+            'asset_id': self.asset_id.id,
+            'schedule_id': False,
+            'technician_id': self.assigned_to_id.id if self.assigned_to_id else False,
+            'maintenance_team_id': self.maintenance_team_id.id if self.maintenance_team_id else False,
+            'description': self.description,
+            'status': 'in_progress',
+        }
+        workorder = self.env['maintenance.workorder'].create(workorder_vals)
+        self.workorder_id = workorder.id
+        self.status = 'in_progress'
+        return {
+            'name': 'Work Order',
+            'view_mode': 'form',
+            'res_model': 'maintenance.workorder',
+            'res_id': workorder.id,
+            'type': 'ir.actions.act_window',
+            'target': 'current',
+        }
+
+    def action_view_workorder(self):
+        self.ensure_one()
+        return {
+            'name': 'Related Work Order',
+            'view_mode': 'form',
+            'res_model': 'maintenance.workorder',
+            'res_id': self.workorder_id.id,
+            'type': 'ir.actions.act_window',
+            'target': 'current',
+        }
+
+    def action_set_assigned(self):
+        self.ensure_one()
+        if self.status == 'new':
+            self.status = 'assigned'
+
+    def action_set_in_progress(self):
+        self.ensure_one()
+        if self.status in ['new', 'assigned']:
+            self.status = 'in_progress'
+
+    def action_set_resolved(self):
+        self.ensure_one()
+        if self.status in ['new', 'assigned', 'in_progress']:
+            self.status = 'resolved'
+
+    def action_set_closed(self):
+        self.ensure_one()
+        if self.status == 'resolved':
+            self.status = 'closed'
+            self.date_closed = fields.Datetime.now()
+
+    def action_set_cancelled(self):
+        self.ensure_one()
+        if self.status not in ['resolved', 'closed']:
+            self.status = 'cancelled'
+
+    @api.model
+    def create(self, vals):
+        if vals.get('name', 'New') == 'New':
+            vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.request') or 'New'
+        return super().create(vals)
+
+    def write(self, vals):
+        if 'status' in vals and vals['status'] == 'closed' and not vals.get('date_closed'):
+            vals['date_closed'] = fields.Datetime.now()
+        return super().write(vals)
+
+    def unlink(self):
+        for rec in self:
+            if rec.workorder_id:
+                raise UserError(
+                    "Cannot delete a request that has an associated work order. Please delete the work order first.")
+        return super().unlink()
+
+
+class MaintenanceRequestCategory(models.Model):
+    _name = 'maintenance.request.category'
+    _description = 'Maintenance Request Category'
+
+    name = fields.Char(string="Category Name", required=True)
+    description = fields.Text(string="Description")
+
+--- File: models/predictive_maintenance.py ---
+# models/predictive_maintenance.py
+from odoo import models, fields
+
+class PredictiveMaintenance(models.Model):
+    _name = 'predictive.maintenance'
+    _inherit = 'asset.maintenance.schedule'
+
+    algorithm = fields.Selection([
+        ('linear', 'Linear Regression'),
+        ('mlp', 'Neural Network'),
+        ('svm', 'SVM')
+    ], default='linear')
+    training_data = fields.Binary('Dataset')
+    accuracy = fields.Float(compute='_compute_accuracy')
+
+--- File: security/ir.model.access.csv ---
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_facility,facilities.facility,model_facilities_facility,base.group_user,1,1,1,0
+access_facility_user,Facilities User Access,model_facilities_facility,base.group_user,1,1,1,0
+access_facility_manager,Facilities Manager Access,model_facilities_facility,base.group_erp_manager,1,1,1,1
+access_facility_asset_user,Facilities Asset User Access,model_facilities_asset,base.group_user,1,1,1,0
+access_facility_asset_manager,Facilities Asset Manager Access,model_facilities_asset,base.group_erp_manager,1,1,1,1
+access_asset_category_user,Asset Category User Access,model_facilities_asset_category,base.group_user,1,0,0,0
+access_asset_category_manager,Asset Category Manager Access,model_facilities_asset_category,base.group_erp_manager,1,1,1,1
+access_asset_maintenance_user,Asset Maintenance User Access,model_asset_maintenance_schedule,base.group_user,1,1,1,0
+access_asset_maintenance_manager,Asset Maintenance Manager Access,model_asset_maintenance_schedule,base.group_erp_manager,1,1,1,1
+access_asset_depreciation_user,Asset Depreciation User Access,model_facilities_asset_depreciation,base.group_user,1,0,0,0
+access_asset_depreciation_manager,Asset Depreciation Manager Access,model_facilities_asset_depreciation,base.group_erp_manager,1,1,1,1
+access_maintenance_workorder_user,Maintenance Workorder User Access,model_maintenance_workorder,base.group_user,1,1,1,0
+access_maintenance_workorder_manager,Maintenance Workorder Manager Access,model_maintenance_workorder,base.group_erp_manager,1,1,1,1
+access_predictive_algorithm,Predictive Algorithm User Access,model_predictive_algorithm,base.group_user,1,0,0,0
+access_predictive_algorithm_manager,Predictive Algorithm Manager Access,model_predictive_algorithm,base.group_erp_manager,1,1,1,1
+access_maintenance_workorder_assignment,Maintenance Workorder Assignment Access,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
+access_maintenance_workorder_part_line,Maintenance Workorder Part Line Access,model_maintenance_workorder_part_line,,1,1,1,1
+
+--- File: security/ir.model.csv ---
+id,model,name
+model_facilities_facility,facilities.facility,Facility Management
+model_facilities_facility,facilities.facility,Facility
+model_facilities_asset,facilities.asset,Asset
+model_facilities_asset_category,facilities.asset.category,Asset Category
+model_asset_maintenance_schedule,asset.maintenance.schedule,Asset Maintenance Schedule
+model_maintenance_workorder,maintenance.workorder,Maintenance Work Order
+model_facilities_asset_depreciation,facilities.asset.depreciation,Asset Depreciation
+model_predictive_algorithm,predictive.algorithm,Predictive Algorithm
+
+--- File: security/facility_management_security.xml ---
+<?xml version="1.0"?>
+<odoo>
+    <data noupdate="1">
+        <record id="group_facility_user" model="res.groups">
+            <field name="name">Facility User</field>
+        </record>
+        <record id="group_facility_manager" model="res.groups">
+            <field name="name">Facility Manager</field>
+        </record>
+    </data>
+</odoo>
+
+--- File: data/sequences.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Sequence for Maintenance Schedules -->
+    <record id="seq_asset_maintenance" model="ir.sequence">
+        <field name="name">Asset Maintenance Schedule Reference</field>
+        <field name="code">asset.maintenance.schedule</field>
+        <field name="prefix">MAINT/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- Sequence for Work Orders -->
+    <record id="seq_maintenance_workorder" model="ir.sequence">
+        <field name="name">Maintenance Work Order Reference</field>
+        <field name="code">maintenance.workorder</field>
+        <field name="prefix">WO/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>
+
+--- File: data/email_templates.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="email_template_maintenance_reminder" model="mail.template">
+            <field name="name">Maintenance Schedule Reminder</field>
+            <field name="model_id" ref="facilities_management.model_asset_maintenance_schedule"/>
+            <field name="email_from">${(object.technician_id.user_id.email_formatted or user.email_formatted)}</field>
+            <field name="email_to">${(object.technician_id.user_id.email_formatted or '')}</field>
+            <field name="subject">Upcoming Maintenance for ${object.asset_id.name}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                        Dear <t t-out="object.technician_id.name or 'Recipient'"/>,
+                        <br/><br/>
+                        This is a reminder for the upcoming maintenance:
+                        <br/>
+                        <ul>
+                            <li><strong>Asset:</strong> <t t-out="object.asset_id.name"/></li>
+                            <li><strong>Reference:</strong> <t t-out="object.name"/></li>
+                            <li><strong>Type:</strong> <t t-out="object.maintenance_type"/></li>
+                            <li><strong>Scheduled Date:</strong> <t t-out="object.maintenance_date"/></li>
+                        </ul>
+                        <br/>
+                        Please ensure all necessary preparations are made.
+                        <br/><br/>
+                        Thank you,
+                        <br/>
+                        Your Facilities Management Team
+                    </p>
+                </div>
+            </field>
+            <field name="lang">${object.technician_id.user_id.lang}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>
+
+--- File: data/predictive_parameters.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    </odoo>
+
+--- File: data/maintenance_cron.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="ir_cron_advanced_maintenance" model="ir.cron">
+            <field name="name">Generate Preventive Maintenance Work Orders</field> <!-- More descriptive name -->
+            <field name="model_id" ref="model_asset_maintenance_schedule"/>
+            <field name="state">code</field>
+            <field name="code">model._generate_preventive_workorders()</field> <!-- Calls the new method -->
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field> <!-- Changed to days for daily check -->
+            <field name="numbercall">-1</field> <!-- Unlimited calls -->
+        </record>
+    </data>
+</odoo>
+
+--- File: views/facility_asset_search.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!-- Place your records inside the <data> tag -->
+        <record id="view_facility_asset_search" model="ir.ui.view">
+            <field name="name">facilities.asset.search</field>
+            <field name="model">facilities.asset</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name"/>
+                    <field name="asset_tag"/>
+                    <field name="serial_number"/>
+                    <field name="condition"/>
+                    <field name="warranty_status"/>
+                </search>
+            </field>
+        </record>
+    </data>
+</odoo>
+
+
+--- File: views/facility_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_facility_tree" model="ir.ui.view">
+        <field name="name">facility.tree</field>
+        <field name="model">facilities.facility</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="manager_id"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_facility_form" model="ir.ui.view">
+        <field name="name">facility.form</field>
+        <field name="model">facilities.facility</field>
+        <field name="arch" type="xml">
+            <form string="Facility">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="manager_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">facilities.facility</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>
+
+--- File: views/mobile_templates.xml ---
+<!-- views/mobile_templates.xml -->
+<odoo>
+    <template id="mobile_workorder_view" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <link rel="stylesheet" href="/facilities_management/static/src/css/mobile.css"/>
+        </xpath>
+    </template>
+</odoo>
+
+--- File: views/asset_maintenance_scheduled_actions.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="ir_cron_maintenance_reminder" model="ir.cron">
+        <field name="name">Maintenance Schedule Reminder</field>
+        <field name="model_id" ref="facilities_management.model_asset_maintenance_schedule"/>
+        <field name="state">code</field>
+        <field name="code">
+            model.send_maintenance_reminder()
+        </field>
+        <field name="user_id" ref="base.user_admin"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>  </record>
+
+    <record id="action_asset_maintenance_scheduled_actions" model="ir.actions.act_window">
+        <field name="name">Maintenance Scheduled Actions</field>
+        <field name="res_model">ir.cron</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">
+            ['|', ('model_id.model', 'in', ['asset.maintenance.schedule', 'facilities.asset']), ('name', 'ilike', 'Maintenance')]
+        </field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage your module's automated tasks
+            </p><p>
+                This view shows the scheduled actions (cron jobs) configured for maintenance.
+            </p>
+        </field>
+    </record>
+
+</odoo>
+
+--- File: views/maintenance_request_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_maintenance_request_category_tree" model="ir.ui.view">
+        <field name="name">maintenance.request.category.tree</field>
+        <field name="model">maintenance.request.category</field>
+        <field name="arch" type="xml">
+            <tree string="Maintenance Request Categories">
+                <field name="name"/>
+                <field name="description"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_category_form" model="ir.ui.view">
+        <field name="name">maintenance.request.category.form</field>
+        <field name="model">maintenance.request.category</field>
+        <field name="arch" type="xml">
+            <form string="Maintenance Request Category">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_maintenance_request_category" model="ir.actions.act_window">
+        <field name="name">Request Categories</field>
+        <field name="res_model">maintenance.request.category</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Define categories for your maintenance requests.
+            </p>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_tree" model="ir.ui.view">
+        <field name="name">maintenance.request.tree</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <tree string="Maintenance Requests" decoration-success="status=='resolved'" decoration-info="status=='in_progress'" decoration-danger="priority=='3' and status not in ('resolved', 'closed', 'cancelled')">
+                <field name="name"/>
+                <field name="requestor_id"/>
+                <field name="facility_id"/>
+                <field name="asset_id"/>
+                <field name="category_id"/>
+                <field name="priority" widget="priority"/>
+                <field name="date_requested"/>
+                <field name="assigned_to_id"/>
+                <field name="status" widget="badge"/>
+                <field name="date_closed"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_form" model="ir.ui.view">
+        <field name="name">maintenance.request.form</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <form string="Maintenance Request">
+                <header>
+                    <button name="action_create_workorder" type="object" string="Create Work Order" class="oe_highlight" attrs="{'invisible': [('workorder_id', '!=', False)]}"/>
+                    <button name="action_set_assigned" type="object" string="Mark Assigned" attrs="{'invisible': [('status', 'not in', ['new'])]}"/>
+                    <button name="action_set_in_progress" type="object" string="Mark In Progress" attrs="{'invisible': [('status', 'not in', ['new', 'assigned'])]}"/>
+                    <button name="action_set_resolved" type="object" string="Mark Resolved" attrs="{'invisible': [('status', 'not in', ['new', 'assigned', 'in_progress'])]}"/>
+                    <button name="action_set_closed" type="object" string="Mark Closed" attrs="{'invisible': [('status', 'not in', ['resolved'])]}"/>
+                    <button name="action_set_cancelled" type="object" string="Mark Cancelled" attrs="{'invisible': [('status', 'in', ['resolved', 'closed', 'cancelled'])]}"/>
+                    <field name="status" widget="statusbar" statusbar_visible="new,assigned,in_progress,resolved,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_workorder" type="object" class="oe_stat_button" icon="fa-wrench"
+                                attrs="{'invisible': [('workorder_id', '=', False)]}">
+                            <field name="workorder_id" invisible="1"/>
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Work Order</span>
+                            </div>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="requestor_id"/>
+                            <field name="facility_id"/>
+                            <field name="asset_id" domain="[('facility_id', '=', facility_id)]"/>
+                        </group>
+                        <group>
+                            <field name="category_id"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="date_requested"/>
+                            <field name="assigned_to_id"/>
+                            <field name="date_closed"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Other Info" name="other_info">
+                            <group>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                                </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_maintenance_request_search" model="ir.ui.view">
+        <field name="name">maintenance.request.search</field>
+        <field name="model">maintenance.request</field>
+        <field name="arch" type="xml">
+            <search string="Maintenance Requests">
+                <field name="name" string="Request"/>
+                <field name="requestor_id"/>
+                <field name="facility_id"/>
+                <field name="asset_id"/>
+                <field name="category_id"/>
+                <field name="assigned_to_id"/>
+                <filter name="status_new" string="New" domain="[('status', '=', 'new')]"/>
+                <filter name="status_assigned" string="Assigned" domain="[('status', '=', 'assigned')]"/>
+                <filter name="status_in_progress" string="In Progress" domain="[('status', '=', 'in_progress')]"/>
+                <filter name="status_resolved" string="Resolved" domain="[('status', '=', 'resolved')]"/>
+                <filter name="status_closed" string="Closed" domain="[('status', '=', 'closed')]"/>
+                <filter name="status_cancelled" string="Cancelled" domain="[('status', '=', 'cancelled')]"/>
+                <filter name="my_requests" string="My Requests" domain="[('requestor_id.user_id', '=', uid)]"/>
+                <filter name="assigned_to_me" string="Assigned to Me" domain="[('assigned_to_id.user_id', '=', uid)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="groupby_status" string="Status" context="{'group_by': 'status'}"/>
+                    <filter name="groupby_facility" string="Facility" context="{'group_by': 'facility_id'}"/>
+                    <filter name="groupby_asset" string="Asset" context="{'group_by': 'asset_id'}"/>
+                    <filter name="groupby_category" string="Category" context="{'group_by': 'category_id'}"/>
+                    <filter name="groupby_requestor" string="Requestor" context="{'group_by': 'requestor_id'}"/>
+                    <filter name="groupby_assigned_to" string="Assigned To" context="{'group_by': 'assigned_to_id'}"/>
+                    <filter name="groupby_priority" string="Priority" context="{'group_by': 'priority'}"/>
+                    <filter name="groupby_month" string="Request Month" context="{'group_by': 'date_requested:quarter'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_maintenance_request" model="ir.actions.act_window">
+        <field name="name">Maintenance Requests</field>
+        <field name="res_model">maintenance.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_status_new': 1}</field> <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new maintenance request.
+            </p><p>
+                Track issues, assign technicians, and manage the resolution process.
+            </p>
+        </field>
+    </record>
+</odoo>
+
+--- File: views/asset_maintenance_calendar_views.xml ---
+<odoo>
+    <record id="view_maintenance_schedule_calendar" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.calendar</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <calendar date_start="next_maintenance_date"
+                      color="asset_id"
+                      string="Maintenance Calendar">
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="action_maintenance_calendar" model="ir.actions.act_window">
+        <field name="name">Maintenance Calendar</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Plan your asset maintenance schedules
+            </p><p>
+                Organize and visualize maintenance tasks on a calendar.
+            </p>
+        </field>
+    </record>
+
+</odoo>
+
+--- File: views/asset_maintenance_schedule_views.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_asset_maintenance_schedule_tree" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.tree</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+                <field name="interval_number"/>
+                <field name="interval_type"/>
+                <field name="last_maintenance_date"/>
+                <field name="next_maintenance_date"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_asset_maintenance_schedule_form" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.form</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Asset Maintenance Schedule" readonly="active">
+                <header>
+                    <button name="toggle_active" type="object" string="Deactivate"
+                            invisible="not active"
+                            help="Deactivate the schedule. It will no longer appear in default lists."/>
+                    <button name="toggle_active" type="object" string="Activate"
+                            invisible="active"
+                            class="oe_highlight"
+                            help="Activate the schedule. It will appear in default lists."/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="asset_id"/>
+                            <field name="maintenance_type"/>
+                        </group>
+                        <group>
+                            <field name="last_maintenance_date"/> <field name="next_maintenance_date"/>
+                            <field name="interval_number"/>
+                            <field name="interval_type"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                    <field name="active" invisible="1"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_asset_maintenance_schedule_calendar" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.calendar</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <calendar string="Maintenance Schedule Calendar" date_start="next_maintenance_date" mode="month" color="asset_id">
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+            </calendar>
+        </field>
+    </record>
+
+</odoo>
+
+--- File: views/asset_dashboard_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- First create the individual views -->
+    <record id="view_asset_graph" model="ir.ui.view">
+        <field name="name">asset.graph</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="name"/>
+                <field name="category_id"/>
+                <!-- Add other fields you want to analyze -->
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_asset_pivot" model="ir.ui.view">
+        <field name="name">asset.pivot</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="category_id" type="row"/>
+                <field name="purchase_date" interval="month"/>
+                <!-- Add other fields for pivot -->
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Then create the dashboard action -->
+    <record id="action_asset_dashboard" model="ir.actions.act_window">
+        <field name="name">Asset Dashboard</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">graph,pivot,kanban</field>
+        <field name="context">{'search_default_group_by_category': 1}</field>
+    </record>
+</odoo>
+
+--- File: views/maintenance_report_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_maintenance_reports" model="ir.actions.act_window">
+        <field name="name">Maintenance Reports</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="views" eval="[(False, 'pivot'), (False, 'graph')]"/>
+    </record>
+
+    <record id="view_maintenance_pivot" model="ir.ui.view">
+        <field name="name">maintenance.pivot</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="asset_id" type="row"/>
+                <field name="maintenance_type" type="col"/>
+                <field name="active" type="col"/> </pivot>
+        </field>
+    </record>
+
+    <record id="view_maintenance_graph" model="ir.ui.view">
+        <field name="name">maintenance.graph</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+                </graph>
+        </field>
+    </record>
+</odoo>
+
+--- File: views/email_templates.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Email Template for Maintenance Reminder -->
+    <record id="email_template_maintenance_reminder" model="mail.template">
+        <field name="name">Maintenance Reminder</field>
+        <field name="model_id" ref="model_asset_maintenance_schedule"/>
+        <field name="subject">Reminder: Upcoming Maintenance for Asset</field>
+        <field name="body_html">
+            <![CDATA[
+            <p>Dear User,</p>
+            <p>This is a reminder that the maintenance for the asset <strong>${object.asset_id.name}</strong> is scheduled for <strong>${object.maintenance_date}</strong>.</p>
+            <p>Please ensure that the maintenance is completed on time.</p>
+            <p>Best Regards,<br/>Facility Management Team</p>
+            ]]>
+        </field>
+    </record>
+</odoo>
+
+
+--- File: views/facility_asset_menus.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">facilities.facility</field>
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+
+    <record id="action_asset" model="ir.actions.act_window">
+        <field name="name">Assets</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+
+    <record id="action_asset_category" model="ir.actions.act_window">
+        <field name="name">Asset Categories</field>
+        <field name="res_model">facilities.asset.category</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_maintenance_schedule" model="ir.actions.act_window">
+        <field name="name">Maintenance Schedules</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">tree,form,calendar</field>
+    </record>
+
+    <record id="action_maintenance_workorder" model="ir.actions.act_window">
+        <field name="name">Maintenance Work Orders</field>
+        <field name="res_model">maintenance.workorder</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem id="menu_facilities_root" name="Facility Management" sequence="10"/>
+
+    <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
+
+    <menuitem id="menu_facility_records" name="Facilities" parent="menu_facilities_root" action="action_facility" sequence="10"/>
+
+    <menuitem id="menu_asset_management" name="Asset Management" parent="menu_facilities_root" sequence="15"/>
+    <menuitem id="menu_asset_list" name="Assets" parent="menu_asset_management" action="action_asset" sequence="10"/>
+    <menuitem id="menu_asset_categories" name="Categories" parent="menu_asset_management" action="action_asset_category" sequence="20"/>
+    <menuitem id="menu_asset_dashboard_item"
+              name="Asset Dashboard"
+              parent="menu_asset_management"
+              action="action_asset_dashboard"
+              sequence="30"/>
+
+    <menuitem id="menu_maintenance_schedule"
+             name="Schedules"
+             parent="menu_maintenance"
+             action="action_maintenance_schedule"
+             sequence="10"/>
+    <menuitem id="menu_maintenance_workorders"
+              name="Work Orders"
+              parent="menu_maintenance"
+              action="action_maintenance_workorder"  sequence="20"/>
+    <menuitem id="menu_maintenance_calendar_item"
+              name="Calendar View"
+              parent="menu_maintenance"
+              action="action_maintenance_calendar"  sequence="30"/>
+    <menuitem id="menu_scheduled_maintenance_actions"
+          name="Scheduled Actions"
+          parent="menu_maintenance"
+          action="action_asset_maintenance_scheduled_actions"
+          sequence="45"
+          groups="base.group_system"/>
+
+    <menuitem id="menu_maintenance_reports_item"
+              name="Analysis &amp; Reports"
+              parent="menu_maintenance"
+              action="action_maintenance_reports"
+              sequence="50"/>
+
+</odoo>
+
+--- File: views/predictive_algorithm_views.xml ---
+<odoo>
+    <record id="view_predictive_algorithm_tree" model="ir.ui.view">
+        <field name="name">predictive.algorithm.tree</field>
+        <field name="model">predictive.algorithm</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="model_type"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_predictive_algorithm_form" model="ir.ui.view">
+        <field name="name">predictive.algorithm.form</field>
+        <field name="model">predictive.algorithm</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="model_type"/>
+                        <field name="asset_type_ids" widget="many2many_tags"/>
+                        <field name="code_implementation" widget="ace" options="{'mode': 'python'}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_predictive_algorithms" model="ir.actions.act_window">
+        <field name="name">AI Algorithms</field>
+        <field name="res_model">predictive.algorithm</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new predictive algorithm
+            </p><p>
+                Define algorithms to predict asset maintenance needs based on various parameters.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_predictive_algorithms" name="AI Algorithms" parent="maintenance.menu_maintenance_root" sequence="40" action="action_predictive_algorithms"/>
+</odoo>
+
+--- File: views/maintenance_workorder_part_line_views.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Part Line Tree View -->
+    <record id="maintenance_workorder_part_line_tree_view" model="ir.ui.view">
+        <field name="name">maintenance.workorder.part.line.tree</field>
+        <field name="model">maintenance.workorder.part_line</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="product_id" string="Part"/>
+                <field name="quantity" string="Qty"/>
+                <field name="uom_id" string="Unit"/>
+                <field name="notes"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Part Line Form View -->
+    <record id="maintenance_workorder_part_line_form_view" model="ir.ui.view">
+        <field name="name">maintenance.workorder.part.line.form</field>
+        <field name="model">maintenance.workorder.part_line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="product_id"/>
+                        <field name="quantity"/>
+                        <field name="uom_id"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
+
+--- File: views/asset_dashboard_community.xml ---
+<odoo>
+    <record id="view_asset_graph" model="ir.ui.view">
+        <field name="name">asset.community.graph</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <graph string="Asset Analysis" type="bar">
+                <field name="category_id" type="row"/>
+                <field name="condition" type="measure"/>
+                <field name="warranty_status" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_asset_pivot" model="ir.ui.view">
+        <field name="name">asset.community.pivot</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <pivot string="Asset Analysis">
+                <field name="category_id" type="row"/>
+                <field name="condition" type="col"/>
+                <field name="warranty_status" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+</odoo>
+
+--- File: views/maintenance_workorder_views.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_workorder_form" model="ir.ui.view">
+        <field name="name">maintenance.workorder.form</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="status" widget="statusbar"/>
+                    <button name="action_start_progress" type="object" string="Start Progress"
+                            invisible="status != 'draft'" class="oe_highlight"/>
+                    <button name="action_complete" type="object" string="Mark as Completed"
+                            invisible="status != 'in_progress'" class="oe_highlight"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="status in ('done', 'cancelled')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="status not in ('done', 'cancelled')"
+                            confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
+                </header>
+                <sheet>
+                    <group>
+                        <group col="4">
+                            <field name="name"/>
+                            <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="schedule_id"
+                                   domain="[('active','=',True), ('asset_id','=',asset_id)]"
+                                   context="{'default_asset_id': asset_id}"/>
+                            <field name="work_order_type"/>
+                            <field name="technician_id"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                    </group>
+
+                    <group string="Actual Work Dates">
+                        <field name="actual_start_date"/>
+                        <field name="actual_end_date"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Technician Assignments">
+                            <field name="assignment_ids">
+                                <tree editable="bottom">
+                                    <field name="technician_id"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Work Done">
+                            <field name="work_done"/>
+                        </page>
+                        <page string="Parts Used">
+                            <field name="parts_used_ids">
+                                <tree editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id"/>
+                                    <field name="notes"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+</odoo>
+
+--- File: views/asset_category_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_asset_category_tree" model="ir.ui.view">
+        <field name="name">asset.category.tree</field>
+        <field name="model">facilities.asset.category</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_asset_category_form" model="ir.ui.view">
+        <field name="name">asset.category.form</field>
+        <field name="model">facilities.asset.category</field>
+        <field name="arch" type="xml">
+            <form string="Asset Category">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_asset_category" model="ir.actions.act_window">
+        <field name="name">Asset Categories</field>
+        <field name="res_model">facilities.asset.category</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>
+
+
+--- File: views/workorder_type_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Tree View for Work Order Types -->
+    <record id="view_workorder_type_tree" model="ir.ui.view">
+        <field name="name">workorder.type.tree</field>
+        <field name="model">workorder.type</field>
+        <field name="arch" type="xml">
+            <tree string="Work Order Types">
+                <field name="name"/>
+                <field name="description"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View for Work Order Types -->
+    <record id="view_workorder_type_form" model="ir.ui.view">
+        <field name="name">workorder.type.form</field>
+        <field name="model">workorder.type</field>
+        <field name="arch" type="xml">
+            <form string="Work Order Type">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Work Order Types -->
+    <record id="action_workorder_type" model="ir.actions.act_window">
+        <field name="name">Work Order Types</field>
+        <field name="res_model">workorder.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Define and manage categories for your maintenance work orders.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item for Work Order Types (under Maintenance -> Configuration) -->
+    <menuitem id="menu_maintenance_workorder_type_config"
+              name="Work Order Types"
+              parent="maintenance.menu_maintenance_configuration"
+              action="action_workorder_type"
+              sequence="20"/>
+
+</odoo>
+
+
+--- File: views/product_views.xml ---
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- This creates new fields without trying to modify non-existent ones -->
+    <record id="view_product_product_extension" model="ir.ui.view">
+        <field name="name">product.product.form.extension</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <!-- Just add something simple to ensure the inheritance works -->
+            <field name="default_code" position="after">
+                <field name="service_tracking" invisible="1"/>
+                <field name="service_policy" invisible="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>
+
+--- File: views/facility_asset_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Facility Asset Tree View -->
+    <record id="view_facilities_asset_tree" model="ir.ui.view">
+        <field name="name">facilities.asset.tree</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active">
+                <field name="name"/>
+                <field name="asset_code"/>
+                <field name="facility_id"/>
+                <field name="condition"/>
+                <field name="responsible_id"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Facility Asset Form View -->
+    <record id="view_facility_asset_form" model="ir.ui.view">
+        <field name="name">facilities.asset.form</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <form string="Asset">
+                <header>
+                    <field name="condition" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="asset_code"/>
+                        <field name="facility_id"/>
+                        <field name="category_id"/>
+                        <field name="purchase_date"/>
+                        <field name="responsible_id"/>
+                        <field name="notes"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_facilities_asset" model="ir.actions.act_window">
+        <field name="name">Facility Assets</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>
+

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">facilities.facility</field>
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+
+    <record id="action_asset" model="ir.actions.act_window">
+        <field name="name">Assets</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,form,kanban</field>
+    </record>
+
+    <record id="action_asset_category" model="ir.actions.act_window">
+        <field name="name">Asset Categories</field>
+        <field name="res_model">facilities.asset.category</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_maintenance_schedule" model="ir.actions.act_window">
+        <field name="name">Maintenance Schedules</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">tree,form,calendar</field>
+    </record>
+
+    <record id="action_maintenance_workorder" model="ir.actions.act_window">
+        <field name="name">Maintenance Work Orders</field>
+        <field name="res_model">maintenance.workorder</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem id="menu_facilities_root" name="Facility Management" sequence="10"/>
+
+    <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
+
+    <menuitem id="menu_facility_records" name="Facilities" parent="menu_facilities_root" action="action_facility" sequence="10"/>
+
+    <menuitem id="menu_asset_management" name="Asset Management" parent="menu_facilities_root" sequence="15"/>
+    <menuitem id="menu_asset_list" name="Assets" parent="menu_asset_management" action="action_asset" sequence="10"/>
+    <menuitem id="menu_asset_categories" name="Categories" parent="menu_asset_management" action="action_asset_category" sequence="20"/>
+    <menuitem id="menu_asset_dashboard_item"
+              name="Asset Dashboard"
+              parent="menu_asset_management"
+              action="action_asset_dashboard"
+              sequence="30"/>
+
+    <menuitem id="menu_maintenance_schedule"
+             name="Schedules"
+             parent="menu_maintenance"
+             action="action_maintenance_schedule"
+             sequence="10"/>
+    <menuitem id="menu_maintenance_workorders"
+              name="Work Orders"
+              parent="menu_maintenance"
+              action="action_maintenance_workorder"  sequence="20"/>
+    <menuitem id="menu_maintenance_calendar_item"
+              name="Calendar View"
+              parent="menu_maintenance"
+              action="action_maintenance_calendar"  sequence="30"/>
+    <menuitem id="menu_scheduled_maintenance_actions"
+          name="Scheduled Actions"
+          parent="menu_maintenance"
+          action="action_asset_maintenance_scheduled_actions"
+          sequence="45"
+          groups="base.group_system"/>
+
+    <menuitem id="menu_maintenance_reports_item"
+              name="Analysis &amp; Reports"
+              parent="menu_maintenance"
+              action="action_maintenance_reports"
+              sequence="50"/>
+
+</odoo>

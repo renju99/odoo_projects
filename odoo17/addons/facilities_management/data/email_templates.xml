@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="email_template_maintenance_reminder" model="mail.template">
+            <field name="name">Maintenance Schedule Reminder</field>
+            <field name="model_id" ref="facilities_management.model_asset_maintenance_schedule"/>
+            <field name="email_from">${(object.technician_id.user_id.email_formatted or user.email_formatted)}</field>
+            <field name="email_to">${(object.technician_id.user_id.email_formatted or '')}</field>
+            <field name="subject">Upcoming Maintenance for ${object.asset_id.name}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                        Dear <t t-out="object.technician_id.name or 'Recipient'"/>,
+                        <br/><br/>
+                        This is a reminder for the upcoming maintenance:
+                        <br/>
+                        <ul>
+                            <li><strong>Asset:</strong> <t t-out="object.asset_id.name"/></li>
+                            <li><strong>Reference:</strong> <t t-out="object.name"/></li>
+                            <li><strong>Type:</strong> <t t-out="object.maintenance_type"/></li>
+                            <li><strong>Scheduled Date:</strong> <t t-out="object.maintenance_date"/></li>
+                        </ul>
+                        <br/>
+                        Please ensure all necessary preparations are made.
+                        <br/><br/>
+                        Thank you,
+                        <br/>
+                        Your Facilities Management Team
+                    </p>
+                </div>
+            </field>
+            <field name="lang">${object.technician_id.user_id.lang}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

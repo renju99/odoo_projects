@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_asset_maintenance_schedule_tree" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.tree</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+                <field name="interval_number"/>
+                <field name="interval_type"/>
+                <field name="last_maintenance_date"/>
+                <field name="next_maintenance_date"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_asset_maintenance_schedule_form" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.form</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Asset Maintenance Schedule" readonly="active">
+                <header>
+                    <button name="toggle_active" type="object" string="Deactivate"
+                            invisible="not active"
+                            help="Deactivate the schedule. It will no longer appear in default lists."/>
+                    <button name="toggle_active" type="object" string="Activate"
+                            invisible="active"
+                            class="oe_highlight"
+                            help="Activate the schedule. It will appear in default lists."/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="asset_id"/>
+                            <field name="maintenance_type"/>
+                        </group>
+                        <group>
+                            <field name="last_maintenance_date"/> <field name="next_maintenance_date"/>
+                            <field name="interval_number"/>
+                            <field name="interval_type"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                    <field name="active" invisible="1"/>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_asset_maintenance_schedule_calendar" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.calendar</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <calendar string="Maintenance Schedule Calendar" date_start="next_maintenance_date" mode="month" color="asset_id">
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+            </calendar>
+        </field>
+    </record>
+
+</odoo>

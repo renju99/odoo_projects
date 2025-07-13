@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="ir_cron_maintenance_reminder" model="ir.cron">
+        <field name="name">Maintenance Schedule Reminder</field>
+        <field name="model_id" ref="facilities_management.model_asset_maintenance_schedule"/>
+        <field name="state">code</field>
+        <field name="code">
+            model.send_maintenance_reminder()
+        </field>
+        <field name="user_id" ref="base.user_admin"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>  </record>
+
+    <record id="action_asset_maintenance_scheduled_actions" model="ir.actions.act_window">
+        <field name="name">Maintenance Scheduled Actions</field>
+        <field name="res_model">ir.cron</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">
+            ['|', ('model_id.model', 'in', ['asset.maintenance.schedule', 'facilities.asset']), ('name', 'ilike', 'Maintenance')]
+        </field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage your module's automated tasks
+            </p><p>
+                This view shows the scheduled actions (cron jobs) configured for maintenance.
+            </p>
+        </field>
+    </record>
+
+</odoo>

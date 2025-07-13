@@ -1,0 +1,8 @@
+<!-- views/mobile_templates.xml -->
+<odoo>
+    <template id="mobile_workorder_view" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <link rel="stylesheet" href="/facilities_management/static/src/css/mobile.css"/>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- First create the individual views -->
+    <record id="view_asset_graph" model="ir.ui.view">
+        <field name="name">asset.graph</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="name"/>
+                <field name="category_id"/>
+                <!-- Add other fields you want to analyze -->
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_asset_pivot" model="ir.ui.view">
+        <field name="name">asset.pivot</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="category_id" type="row"/>
+                <field name="purchase_date" interval="month"/>
+                <!-- Add other fields for pivot -->
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Then create the dashboard action -->
+    <record id="action_asset_dashboard" model="ir.actions.act_window">
+        <field name="name">Asset Dashboard</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">graph,pivot,kanban</field>
+        <field name="context">{'search_default_group_by_category': 1}</field>
+    </record>
+</odoo>

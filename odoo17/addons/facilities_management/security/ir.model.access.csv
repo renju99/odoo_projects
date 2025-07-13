@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_facility,facilities.facility,model_facilities_facility,base.group_user,1,1,1,0
+access_facility_user,Facilities User Access,model_facilities_facility,base.group_user,1,1,1,0
+access_facility_manager,Facilities Manager Access,model_facilities_facility,base.group_erp_manager,1,1,1,1
+access_facility_asset_user,Facilities Asset User Access,model_facilities_asset,base.group_user,1,1,1,0
+access_facility_asset_manager,Facilities Asset Manager Access,model_facilities_asset,base.group_erp_manager,1,1,1,1
+access_asset_category_user,Asset Category User Access,model_facilities_asset_category,base.group_user,1,0,0,0
+access_asset_category_manager,Asset Category Manager Access,model_facilities_asset_category,base.group_erp_manager,1,1,1,1
+access_asset_maintenance_user,Asset Maintenance User Access,model_asset_maintenance_schedule,base.group_user,1,1,1,0
+access_asset_maintenance_manager,Asset Maintenance Manager Access,model_asset_maintenance_schedule,base.group_erp_manager,1,1,1,1
+access_asset_depreciation_user,Asset Depreciation User Access,model_facilities_asset_depreciation,base.group_user,1,0,0,0
+access_asset_depreciation_manager,Asset Depreciation Manager Access,model_facilities_asset_depreciation,base.group_erp_manager,1,1,1,1
+access_maintenance_workorder_user,Maintenance Workorder User Access,model_maintenance_workorder,base.group_user,1,1,1,0
+access_maintenance_workorder_manager,Maintenance Workorder Manager Access,model_maintenance_workorder,base.group_erp_manager,1,1,1,1
+access_maintenance_workorder_assignment,Maintenance Workorder Assignment Access,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
+access_maintenance_workorder_part_line,Maintenance Workorder Part Line Access,model_maintenance_workorder_part_line,,1,1,1,1
