@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="3b0efb04-354b-4b9b-b8f9-68448655cf12" name="Changes" comment="frequency removed from jobplans">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_workorder_task.py" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/models/maintenance_workorder_task.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_workorder_views.xml" beforeDir="false" afterPath="$PROJECT_DIR$/odoo17/addons/facilities_management/views/maintenance_workorder_views.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,21 +45,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.Odoo15.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Odoo16.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Odoo17.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Odoo18.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/ranjith/odoo_projects&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.Odoo15.executor": "Run",
+    "Python.Odoo16.executor": "Run",
+    "Python.Odoo17.executor": "Run",
+    "Python.Odoo18.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/home/ranjith/odoo_projects",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/odoo17/addons/facilities_management/views" />
