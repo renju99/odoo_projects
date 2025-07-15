@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Tree View for Asset Maintenance Schedule -->
     <record id="view_asset_maintenance_schedule_tree" model="ir.ui.view">
         <field name="name">asset.maintenance.schedule.tree</field>
         <field name="model">asset.maintenance.schedule</field>
@@ -13,10 +14,12 @@
                 <field name="last_maintenance_date"/>
                 <field name="next_maintenance_date"/>
                 <field name="active"/>
+                <field name="job_plan_id"/>
             </tree>
         </field>
     </record>
 
+    <!-- Form View for Asset Maintenance Schedule -->
     <record id="view_asset_maintenance_schedule_form" model="ir.ui.view">
         <field name="name">asset.maintenance.schedule.form</field>
         <field name="model">asset.maintenance.schedule</field>
@@ -37,9 +40,11 @@
                             <field name="name"/>
                             <field name="asset_id"/>
                             <field name="maintenance_type"/>
+                            <field name="job_plan_id"/> <!-- THIS IS THE ADDED FIELD -->
                         </group>
                         <group>
-                            <field name="last_maintenance_date"/> <field name="next_maintenance_date"/>
+                            <field name="last_maintenance_date"/>
+                            <field name="next_maintenance_date"/>
                             <field name="interval_number"/>
                             <field name="interval_type"/>
                         </group>
@@ -60,6 +65,7 @@
         </field>
     </record>
 
+    <!-- Calendar View for Asset Maintenance Schedule -->
     <record id="view_asset_maintenance_schedule_calendar" model="ir.ui.view">
         <field name="name">asset.maintenance.schedule.calendar</field>
         <field name="model">asset.maintenance.schedule</field>
@@ -69,6 +75,20 @@
                 <field name="asset_id"/>
                 <field name="maintenance_type"/>
             </calendar>
+        </field>
+    </record>
+
+    <!-- Action for Asset Maintenance Schedule -->
+    <record id="action_asset_maintenance_schedule" model="ir.actions.act_window">
+        <field name="name">Maintenance Schedules</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">tree,form,calendar</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Asset Maintenance Schedule
+            </p><p>
+                Define recurring maintenance tasks for your assets based on intervals.
+            </p>
         </field>
     </record>
 
