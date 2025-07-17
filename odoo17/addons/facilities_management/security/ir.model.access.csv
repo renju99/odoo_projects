@@ -1,34 +1,21 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_facility,facilities.facility,model_facilities_facility,base.group_user,1,1,1,0
-access_facility_user,Facilities User Access,model_facilities_facility,base.group_user,1,1,1,0
-access_facility_manager,Facilities Manager Access,model_facilities_facility,base.group_erp_manager,1,1,1,1
-access_facility_asset_user,Facilities Asset User Access,model_facilities_asset,base.group_user,1,1,1,0
-access_facility_asset_manager,Facilities Asset Manager Access,model_facilities_asset,base.group_erp_manager,1,1,1,1
-access_asset_category_user,Asset Category User Access,model_facilities_asset_category,base.group_user,1,0,0,0
-access_asset_category_manager,Asset Category Manager Access,model_facilities_asset_category,base.group_erp_manager,1,1,1,1
-access_asset_maintenance_user,Asset Maintenance User Access,model_asset_maintenance_schedule,base.group_user,1,1,1,0
-access_asset_maintenance_manager,Asset Maintenance Manager Access,model_asset_maintenance_schedule,base.group_erp_manager,1,1,1,1
-access_asset_depreciation_user,Asset Depreciation User Access,model_facilities_asset_depreciation,base.group_user,1,0,0,0
-access_asset_depreciation_manager,Asset Depreciation Manager Access,model_facilities_asset_depreciation,base.group_erp_manager,1,1,1,1
-access_maintenance_workorder_user,Maintenance Workorder User Access,model_maintenance_workorder,base.group_user,1,1,1,0
-access_maintenance_workorder_manager,Maintenance Workorder Manager Access,model_maintenance_workorder,base.group_erp_manager,1,1,1,1
-access_maintenance_workorder_assignment,Maintenance Workorder Assignment Access,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
-access_maintenance_workorder_part_line,Maintenance Workorder Part Line Access,model_maintenance_workorder_part_line,,1,1,1,1
-access_facilities_building_user,facilities.building.user,model_facilities_building,base.group_user,1,1,1,0
-access_facilities_building_manager,facilities.building.manager,model_facilities_building,base.group_erp_manager,1,1,1,1
-access_facilities_floor_user,facilities.floor.user,model_facilities_floor,base.group_user,1,1,1,0
-access_facilities_floor_manager,facilities.floor.manager,model_facilities_floor,base.group_erp_manager,1,1,1,1
-access_facilities_room_user,facilities.room.user,model_facilities_room,base.group_user,1,1,1,0
-access_facilities_room_manager,facilities.room.manager,model_facilities_room,base.group_erp_manager,1,1,1,1
-access_maintenance_workorder_task_user,Maintenance Workorder Task User Access,model_maintenance_workorder_task,base.group_user,1,1,1,0
-access_maintenance_workorder_task_manager,Maintenance Workorder Task Manager Access,model_maintenance_workorder_task,base.group_erp_manager,1,1,1,1
-access_maintenance_job_plan_user,Maintenance Job Plan User Access,model_maintenance_job_plan,base.group_user,1,0,0,0
-access_maintenance_job_plan_manager,Maintenance Job Plan Manager Access,model_maintenance_job_plan,base.group_erp_manager,1,1,1,1
-access_maintenance_job_plan_task_user,Maintenance Job Plan Task User Access,model_maintenance_job_plan_task,base.group_user,1,0,0,0
-access_maintenance_job_plan_task_manager,Maintenance Job Plan Task Manager Access,model_maintenance_job_plan_task,base.group_erp_manager,1,1,1,1
-access_maintenance_workorder_sla_manager,maintenance.workorder.sla.manager,model_maintenance_workorder_sla,facilities_management.group_facilities_manager,1,1,1,1
-access_maintenance_workorder_sla_user,maintenance.workorder.sla.user,model_maintenance_workorder_sla,facilities_management.group_facilities_user,1,0,0,0
-access_maintenance_workorder_sla_technician,maintenance.workorder.sla.technician,model_maintenance_workorder_sla,facilities_management.group_facilities_technician,1,0,0,0
-access_maintenance_resource_utilization_manager,maintenance.resource.utilization.manager,model_maintenance_resource_utilization,facilities_management.group_facilities_manager,1,1,1,1
-access_maintenance_resource_utilization_user,maintenance.resource.utilization.user,model_maintenance_resource_utilization,facilities_management.group_facilities_user,1,1,1,0
-access_maintenance_resource_utilization_technician,maintenance.resource.utilization.technician,model_maintenance_resource_utilization,facilities_management.group_facilities_technician,1,1,1,1
+access_facilities_facility_user,facilities.facility.user,model_facilities_facility,base.group_user,1,1,1,1
+access_facilities_building_user,facilities.building.user,model_facilities_building,base.group_user,1,1,1,1
+access_facilities_floor_user,facilities.floor.user,model_facilities_floor,base.group_user,1,1,1,1
+access_facilities_room_user,facilities.room.user,model_facilities_room,base.group_user,1,1,1,1
+access_facilities_asset_user,facilities.asset.user,model_facilities_asset,base.group_user,1,1,1,1
+access_facilities_asset_category_user,facilities.asset.category.user,model_facilities_asset_category,base.group_user,1,1,1,1
+access_asset_maintenance_schedule_user,asset.maintenance.schedule.user,model_asset_maintenance_schedule,base.group_user,1,1,1,1
+access_facilities_asset_depreciation_user,facilities.asset.depreciation.user,model_facilities_asset_depreciation,base.group_user,1,1,1,1
+access_maintenance_workorder_user,maintenance.workorder.user,model_maintenance_workorder,base.group_user,1,1,1,1
+access_maintenance_workorder_task_user,maintenance.workorder.task.user,model_maintenance_workorder_task,base.group_user,1,1,1,1
+access_maintenance_workorder_part_line_user,maintenance.workorder.part.line.user,model_maintenance_workorder_part_line,base.group_user,1,1,1,1
+access_maintenance_workorder_assignment_user,maintenance.workorder.assignment.user,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
+access_maintenance_workorder_type_user,maintenance.workorder.type.user,model_maintenance_workorder_type,base.group_user,1,1,1,1
+access_maintenance_job_plan_user,maintenance.job.plan.user,model_maintenance_job_plan,base.group_user,1,1,1,1
+access_maintenance_job_plan_task_user,maintenance.job.plan.task.user,model_maintenance_job_plan_task,base.group_user,1,1,1,1
+access_predictive_maintenance_user,predictive.maintenance.user,model_predictive_maintenance,base.group_user,1,1,1,1
+access_maintenance_workorder_sla_user,maintenance.workorder.sla.user,model_maintenance_workorder_sla,base.group_user,1,1,1,1
+access_maintenance_resource_utilization_user,maintenance.resource.utilization.user,model_maintenance_resource_utilization,base.group_user,1,1,1,1
+access_maintenance_sla_analytics_user,maintenance.sla.analytics.user,model_maintenance_sla_analytics,base.group_user,1,1,1,1
+access_maintenance_request_stage_user,maintenance.request.stage.user,model_maintenance_request_stage,base.group_user,1,1,1,1
