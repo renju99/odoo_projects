@@ -1,11 +1,34 @@
 <?xml version="1.0"?>
 <odoo>
     <data noupdate="1">
-        <record id="group_facility_user" model="res.groups">
-            <field name="name">Facility User</field>
+
+        <!-- Facilities Management Category -->
+        <record id="module_category_facilities" model="ir.module.category">
+            <field name="name">Facilities Management</field>
+            <field name="description">Helps you manage facilities, assets, and maintenance operations.</field>
+            <field name="sequence">10</field>
         </record>
-        <record id="group_facility_manager" model="res.groups">
-            <field name="name">Facility Manager</field>
+
+        <!-- Facilities Management Groups -->
+        <record id="group_facilities_technician" model="res.groups">
+            <field name="name">Facilities Technician</field>
+            <field name="category_id" ref="module_category_facilities"/>
+            <field name="comment">The user will be able to view and manage maintenance work orders assigned to them.</field>
         </record>
+
+        <record id="group_facilities_user" model="res.groups">
+            <field name="name">Facilities User</field>
+            <field name="category_id" ref="module_category_facilities"/>
+            <field name="implied_ids" eval="[(4, ref('group_facilities_technician'))]"/>
+            <field name="comment">The user will be able to create and manage facilities, assets, and maintenance requests.</field>
+        </record>
+
+        <record id="group_facilities_manager" model="res.groups">
+            <field name="name">Facilities Manager</field>
+            <field name="category_id" ref="module_category_facilities"/>
+            <field name="implied_ids" eval="[(4, ref('group_facilities_user'))]"/>
+            <field name="comment">The user will have full access to all facilities management features including configuration and reports.</field>
+        </record>
+
     </data>
 </odoo>

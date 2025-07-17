@@ -39,6 +39,13 @@ from . import asset_maintenance_schedule
 from . import predictive_maintenance
 from . import asset_depreciation
 
+# NEW IMPORTS FOR SLA AND RESOURCE UTILIZATION
+from . import hr_employee_extension
+from . import workorder_sla
+from . import resource_utilization
+from . import sla_analytics
+from . import workorder_sla_integration
+
 
 # The pre_init_hook can remain if its logic is still desired
 def pre_init_hook(cr):

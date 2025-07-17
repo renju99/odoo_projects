@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- SLA Configuration Views -->
+    <record id="view_workorder_sla_tree" model="ir.ui.view">
+        <field name="name">Work Order SLA Tree</field>
+        <field name="model">maintenance.workorder.sla</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="priority"/>
+                <field name="facility_id"/>
+                <field name="work_order_type"/>
+                <field name="response_time_hours"/>
+                <field name="resolution_time_hours"/>
+                <field name="target_utilization_percentage"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Enhanced Work Order Form with SLA Information -->
+    <record id="view_workorder_form_sla" model="ir.ui.view">
+        <field name="name">Work Order Form with SLA</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="inherit_id" ref="facilities_management.view_maintenance_workorder_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='priority']" position="after">
+                <field name="sla_id" readonly="1"/>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="SLA &amp; Resources">
+                    <group>
+                        <group string="SLA Information">
+                            <field name="sla_response_deadline"/>
+                            <field name="sla_resolution_deadline"/>
+                            <field name="sla_response_status" widget="badge"/>
+                            <field name="sla_resolution_status" widget="badge"/>
+                        </group>
+                        <group string="Resource Metrics">
+                            <field name="total_resource_hours"/>
+                            <field name="resource_efficiency"/>
+                            <field name="assigned_technician_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+
+                    <field name="resource_utilization_ids">
+                        <tree editable="bottom">
+                            <field name="employee_id"/>
+                            <field name="utilization_type"/>
+                            <field name="start_time"/>
+                            <field name="end_time"/>
+                            <field name="hours_logged"/>
+                            <field name="total_cost"/>
+                            <field name="notes"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- SLA Dashboard -->
+    <record id="action_sla_dashboard" model="ir.actions.act_window">
+        <field name="name">SLA Dashboard</field>
+        <field name="res_model">maintenance.workorder</field>
+        <field name="view_mode">kanban,pivot,graph,tree</field>
+        <field name="context">{
+            'search_default_group_by_sla_status': 1,
+            'search_default_active_workorders': 1
+        }</field>
+    </record>
+
+    <!-- Resource Utilization Dashboard -->
+    <record id="action_resource_utilization_dashboard" model="ir.actions.act_window">
+        <field name="name">Resource Utilization Dashboard</field>
+        <field name="res_model">maintenance.resource.utilization</field>
+        <field name="view_mode">pivot,graph,tree</field>
+    </record>
+</odoo>

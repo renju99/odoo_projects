@@ -1,0 +1,166 @@
+/* Facilities Management Styles */
+
+/* Dashboard Cards */
+.o_facilities_dashboard {
+    padding: 16px;
+}
+
+.o_facilities_card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+.o_facilities_card h4 {
+    margin-top: 0;
+    color: #495057;
+}
+
+/* Asset Status Indicators */
+.o_asset_status_active {
+    color: #28a745;
+}
+
+.o_asset_status_maintenance {
+    color: #ffc107;
+}
+
+.o_asset_status_disposed {
+    color: #dc3545;
+}
+
+/* SLA Status Badges */
+.badge.o_sla_on_time {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge.o_sla_warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge.o_sla_critical {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.badge.o_sla_breached {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Asset Dashboard KPIs */
+.o_asset_kpi_card {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    margin: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.o_asset_kpi_card .kpi-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.o_asset_kpi_card .kpi-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Kanban View Enhancements */
+.o_kanban_record .o_kanban_image {
+    border-radius: 50%;
+}
+
+.o_facilities_kanban_card {
+    border-left: 4px solid #007bff;
+}
+
+.o_facilities_kanban_card.priority_high {
+    border-left-color: #dc3545;
+}
+
+.o_facilities_kanban_card.priority_normal {
+    border-left-color: #28a745;
+}
+
+.o_facilities_kanban_card.priority_low {
+    border-left-color: #6c757d;
+}
+
+/* Resource Utilization Charts */
+.o_resource_chart_container {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Form View Enhancements */
+.o_form_sheet .o_group .o_field_widget.o_field_monetary {
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* Asset Condition Colors */
+.o_field_widget[name="condition"] .o_input {
+    font-weight: bold;
+}
+
+.o_field_widget[name="condition"][data-value="new"] .o_input {
+    color: #007bff;
+}
+
+.o_field_widget[name="condition"][data-value="good"] .o_input {
+    color: #28a745;
+}
+
+.o_field_widget[name="condition"][data-value="fair"] .o_input {
+    color: #ffc107;
+}
+
+.o_field_widget[name="condition"][data-value="poor"] .o_input {
+    color: #dc3545;
+}
+
+/* QR Code Display */
+.o_qr_code_container {
+    text-align: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.o_qr_code_container img {
+    max-width: 200px;
+    border: 2px solid #dee2e6;
+    border-radius: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .o_facilities_card {
+        margin: 8px 0;
+        padding: 12px;
+    }
+
+    .o_asset_kpi_card .kpi-value {
+        font-size: 2rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .o_facilities_card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+}
