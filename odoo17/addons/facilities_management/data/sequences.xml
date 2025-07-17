@@ -48,12 +48,18 @@
         <field name="company_id" eval="False"/>
     </record>
 
-    <!-- ADD THIS NEW RECORD FOR JOB PLAN SEQUENCE -->
     <record id="seq_maintenance_job_plan" model="ir.sequence">
         <field name="name">Maintenance Job Plan Sequence</field>
         <field name="code">maintenance.job.plan</field>
         <field name="prefix">JP</field>
         <field name="padding">5</field>
         <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_facilities_asset_barcode" model="ir.sequence">
+        <field name="name">Asset Barcode</field>
+        <field name="code">facilities.asset.barcode</field>
+        <field name="prefix">AS</field>
+        <field name="padding">4</field>
     </record>
 </odoo>

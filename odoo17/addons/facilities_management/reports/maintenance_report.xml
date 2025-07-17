@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo xmlns:width="http://www.w3.org/1999/xhtml">
     <record id="action_report_asset_maintenance" model="ir.actions.report">
         <field name="name">Asset Maintenance Report</field>
         <field name="model">facilities.asset</field>
@@ -23,6 +23,12 @@
                                 <strong>Asset Tag:</strong> <span t-field="o.asset_tag"/><br/>
                                 <strong>Serial Number:</strong> <span t-field="o.serial_number"/><br/>
                                 <strong>Category:</strong> <span t-field="o.category_id.name"/><br/>
+                                <strong>Barcode:</strong>
+                                <span t-field="o.barcode"/>
+                                <br/>
+<img t-if="o.barcode"
+     t-att-src="('/report/barcode/QR/%s' % o.barcode)"
+     style="width:3cm; height:3cm; object-fit:contain;"/>
                             </div>
                             <div class="col-6">
                                 <strong>Facility:</strong> <span t-field="o.facility_id.name"/><br/>
