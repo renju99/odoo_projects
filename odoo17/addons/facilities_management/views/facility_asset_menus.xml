@@ -1,15 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="action_facility" model="ir.actions.act_window">
-        <field name="name">Facilities</field>
-        <field name="res_model">facilities.facility</field>
-        <field name="view_mode">tree,form,kanban</field>
-    </record>
-
+    <!-- Enhanced Asset Action with better view modes -->
     <record id="action_asset" model="ir.actions.act_window">
         <field name="name">Assets</field>
         <field name="res_model">facilities.asset</field>
-        <field name="view_mode">tree,form,kanban</field>
+        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="context">{
+            'search_default_filter_active': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first facility asset!
+            </p>
+            <p>
+                Manage your facility assets including equipment, furniture, and infrastructure.
+            </p>
+        </field>
+    </record>
+
+    <!-- Keep existing actions but enhance them -->
+    <record id="action_facility" model="ir.actions.act_window">
+        <field name="name">Facilities</field>
+        <field name="res_model">facilities.facility</field>
+        <field name="view_mode">kanban,tree,form</field>
     </record>
 
     <record id="action_asset_category" model="ir.actions.act_window">
@@ -21,49 +34,163 @@
     <record id="action_maintenance_schedule" model="ir.actions.act_window">
         <field name="name">Maintenance Schedules</field>
         <field name="res_model">asset.maintenance.schedule</field>
-        <field name="view_mode">tree,form,calendar</field>
+        <field name="view_mode">calendar,tree,form</field>
     </record>
 
     <record id="action_maintenance_workorder" model="ir.actions.act_window">
         <field name="name">Maintenance Work Orders</field>
         <field name="res_model">maintenance.workorder</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">kanban,tree,form</field>
     </record>
 
-    <menuitem id="menu_facilities_root" name="Facility Management" sequence="10"/>
+    <!-- NEW: Enhanced Dashboard Actions -->
+    <record id="action_asset_overview" model="ir.actions.act_window">
+        <field name="name">Asset Overview</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,graph,pivot</field>
+        <field name="context">{
+            'search_default_group_by_category': 1,
+            'search_default_filter_active': 1
+        }</field>
+    </record>
 
+    <record id="action_assets_by_state" model="ir.actions.act_window">
+        <field name="name">Assets by State</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,tree</field>
+        <field name="context">{
+            'search_default_group_by_condition': 1
+        }</field>
+    </record>
+
+    <record id="action_warranty_monitoring" model="ir.actions.act_window">
+        <field name="name">Warranty Monitoring</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,kanban</field>
+        <field name="context">{
+            'search_default_group_by_warranty': 1
+        }</field>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+    </record>
+
+    <record id="action_maintenance_due" model="ir.actions.act_window">
+        <field name="name">Maintenance Due</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,kanban</field>
+        <field name="domain">[('maintenance_due', '=', True)]</field>
+    </record>
+
+    <!-- ROOT MENU -->
+    <menuitem id="menu_facilities_root" name="Facility Management" sequence="10" web_icon="facilities_management,static/description/icon.png"/>
+
+    <!-- FACILITIES SECTION -->
     <menuitem id="menu_facility_records" name="Facilities" parent="menu_facilities_root" sequence="10"/>
 
     <menuitem id="menu_facility_list_item"
-              name="All Facilities"  parent="menu_facility_records"
+              name="All Facilities"
+              parent="menu_facility_records"
               action="action_facility"
-              sequence="5"/> <menuitem id="menu_buildings_item" name="Buildings" parent="menu_facility_records" action="action_facilities_building" sequence="10"/>
-    <menuitem id="menu_floors_item" name="Floors" parent="menu_facility_records" action="action_facilities_floor" sequence="20"/>
-    <menuitem id="menu_rooms_item" name="Rooms" parent="menu_facility_records" action="action_facilities_room" sequence="30"/>
+              sequence="5"/>
 
-    <menuitem id="menu_asset_management" name="Asset Management" parent="menu_facilities_root" sequence="15"/>
-    <menuitem id="menu_asset_list" name="Assets" parent="menu_asset_management" action="action_asset" sequence="10"/>
-    <menuitem id="menu_asset_categories" name="Categories" parent="menu_asset_management" action="action_asset_category" sequence="20"/>
-    <menuitem id="menu_asset_dashboard_item"
-              name="Asset Dashboard"
-              parent="menu_asset_management"
-              action="action_asset_dashboard"
+    <menuitem id="menu_buildings_item"
+              name="Buildings"
+              parent="menu_facility_records"
+              action="action_facilities_building"
+              sequence="10"/>
+
+    <menuitem id="menu_floors_item"
+              name="Floors"
+              parent="menu_facility_records"
+              action="action_facilities_floor"
+              sequence="20"/>
+
+    <menuitem id="menu_rooms_item"
+              name="Rooms"
+              parent="menu_facility_records"
+              action="action_facilities_room"
               sequence="30"/>
 
+    <!-- ENHANCED ASSET MANAGEMENT SECTION -->
+    <menuitem id="menu_asset_management" name="Asset Management" parent="menu_facilities_root" sequence="15"/>
+
+    <!-- Asset Operations -->
+    <menuitem id="menu_asset_operations" name="Operations" parent="menu_asset_management" sequence="5"/>
+
+    <menuitem id="menu_asset_list"
+              name="All Assets"
+              parent="menu_asset_operations"
+              action="action_asset"
+              sequence="10"/>
+
+    <menuitem id="menu_asset_categories"
+              name="Categories"
+              parent="menu_asset_operations"
+              action="action_asset_category"
+              sequence="20"/>
+
+    <!-- Asset Analytics & Dashboards -->
+    <menuitem id="menu_asset_analytics" name="Analytics &amp; Dashboards" parent="menu_asset_management" sequence="10"/>
+
+    <menuitem id="menu_asset_dashboard_item"
+              name="Main Dashboard"
+              parent="menu_asset_analytics"
+              action="action_asset_dashboard"
+              sequence="10"/>
+
+    <menuitem id="menu_asset_overview_item"
+              name="Asset Overview"
+              parent="menu_asset_analytics"
+              action="action_asset_overview"
+              sequence="20"/>
+
+    <menuitem id="menu_asset_value_analysis_item"
+              name="Value Analysis"
+              parent="menu_asset_analytics"
+              action="action_asset_value_analysis"
+              sequence="30"/>
+
+    <menuitem id="menu_assets_by_state_item"
+              name="Assets by Condition"
+              parent="menu_asset_analytics"
+              action="action_assets_by_state"
+              sequence="40"/>
+
+    <!-- Asset Monitoring -->
+    <menuitem id="menu_asset_monitoring" name="Monitoring" parent="menu_asset_management" sequence="15"/>
+
+    <menuitem id="menu_warranty_monitoring_item"
+              name="Warranty Status"
+              parent="menu_asset_monitoring"
+              action="action_warranty_monitoring"
+              sequence="10"/>
+
+    <menuitem id="menu_maintenance_due_item"
+              name="Maintenance Due"
+              parent="menu_asset_monitoring"
+              action="action_maintenance_due"
+              sequence="20"/>
+
+    <!-- MAINTENANCE SECTION -->
     <menuitem id="menu_maintenance" name="Maintenance" parent="menu_facilities_root" sequence="20"/>
+
     <menuitem id="menu_maintenance_schedule"
              name="Schedules"
              parent="menu_maintenance"
              action="action_maintenance_schedule"
              sequence="10"/>
+
     <menuitem id="menu_maintenance_workorders"
               name="Work Orders"
               parent="menu_maintenance"
-              action="action_maintenance_workorder"  sequence="20"/>
+              action="action_maintenance_workorder"
+              sequence="20"/>
+
     <menuitem id="menu_maintenance_calendar_item"
               name="Calendar View"
               parent="menu_maintenance"
-              action="action_maintenance_calendar"  sequence="30"/>
+              action="action_maintenance_calendar"
+              sequence="30"/>
+
     <menuitem id="menu_scheduled_maintenance_actions"
           name="Scheduled Actions"
           parent="menu_maintenance"
@@ -77,10 +204,20 @@
               action="action_maintenance_reports"
               sequence="50"/>
 
+    <!-- REPORTING SECTION (NEW) -->
+    <menuitem id="menu_facilities_reports" name="Reports" parent="menu_facilities_root" sequence="80"/>
+
+    <menuitem id="menu_asset_reports" name="Asset Reports" parent="menu_facilities_reports" sequence="10"/>
+    <menuitem id="menu_maintenance_reports" name="Maintenance Reports" parent="menu_facilities_reports" sequence="20"/>
+    <menuitem id="menu_facility_reports" name="Facility Reports" parent="menu_facilities_reports" sequence="30"/>
+
+    <!-- CONFIGURATION SECTION -->
     <menuitem id="menu_facilities_config"
               name="Configuration"
               parent="menu_facilities_root"
               sequence="99"
               groups="base.group_system"/>
 
+    <menuitem id="menu_asset_config" name="Asset Settings" parent="menu_facilities_config" sequence="10" groups="base.group_system"/>
+    <menuitem id="menu_maintenance_config" name="Maintenance Settings" parent="menu_facilities_config" sequence="20" groups="base.group_system"/>
 </odoo>

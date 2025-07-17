@@ -1,35 +1,296 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- First create the individual views -->
+    <!-- Enhanced Graph View -->
     <record id="view_asset_graph" model="ir.ui.view">
-        <field name="name">asset.graph</field>
+        <field name="name">Asset Analysis Graph</field>
         <field name="model">facilities.asset</field>
         <field name="arch" type="xml">
-            <graph type="bar">
-                <field name="name"/>
-                <field name="category_id"/>
-                <!-- Add other fields you want to analyze -->
+            <graph type="bar" sample="1">
+                <!-- Group by category -->
+                <field name="category_id" type="row"/>
+                <!-- Group by condition -->
+                <field name="condition" type="col"/>
+                <!-- Measure: Purchase Value -->
+                <field name="purchase_value" type="measure"/>
             </graph>
         </field>
     </record>
 
+    <!-- Enhanced Pivot View -->
     <record id="view_asset_pivot" model="ir.ui.view">
-        <field name="name">asset.pivot</field>
+        <field name="name">Asset Analysis Pivot</field>
         <field name="model">facilities.asset</field>
         <field name="arch" type="xml">
-            <pivot>
+            <pivot sample="1" display_quantity="1">
+                <!-- Row grouping -->
                 <field name="category_id" type="row"/>
-                <field name="purchase_date" interval="month"/>
-                <!-- Add other fields for pivot -->
+                <field name="facility_id" type="row"/>
+
+                <!-- Column grouping -->
+                <field name="purchase_date" type="col" interval="month"/>
+
+                <!-- Measures -->
+                <field name="purchase_value" type="measure"/>
+                <field name="expected_lifespan" type="measure"/>
             </pivot>
         </field>
     </record>
 
-    <!-- Then create the dashboard action -->
+    <!-- Enhanced Kanban View -->
+    <record id="view_asset_kanban" model="ir.ui.view">
+        <field name="name">Asset Kanban Dashboard</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="condition" sample="1">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="asset_code"/>
+                <field name="category_id"/>
+                <field name="purchase_value"/>
+                <field name="condition"/>
+                <field name="warranty_status"/>
+                <field name="purchase_date"/>
+                <field name="responsible_id"/>
+                <field name="image_1920"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_card_header">
+                                <div class="o_kanban_card_header_title">
+                                    <div class="o_primary">
+                                        <strong><field name="name"/></strong>
+                                    </div>
+                                    <div class="o_secondary">
+                                        <span t-if="record.asset_code.raw_value">
+                                            Code: <field name="asset_code"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_manage_pane">
+                                    <field name="image_1920" widget="image"
+                                           options="{'size': [64, 64]}" class="o_kanban_image"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_content">
+                                <div class="o_kanban_card_details">
+                                    <div t-if="record.category_id.raw_value">
+                                        <i class="fa fa-tags"/> <field name="category_id"/>
+                                    </div>
+                                    <div t-if="record.purchase_date.raw_value">
+                                        <i class="fa fa-calendar"/>
+                                        Purchased: <field name="purchase_date"/>
+                                    </div>
+                                    <div t-if="record.responsible_id.raw_value">
+                                        <i class="fa fa-user"/>
+                                        <field name="responsible_id"/>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_card_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <span class="oe_kanban_text_red" t-if="record.purchase_value.raw_value">
+                                            Value: <field name="purchase_value" widget="monetary"/>
+                                        </span>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="warranty_status" widget="label_selection"
+                                               options="{'classes': {'valid': 'success', 'expired': 'danger', 'none': 'default'}}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- FIXED Search View with proper domain syntax -->
+    <record id="view_asset_search" model="ir.ui.view">
+        <field name="name">Asset Search</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Asset Name"/>
+                <field name="asset_code" string="Asset Code"/>
+                <field name="serial_number" string="Serial Number"/>
+                <field name="asset_tag" string="Asset Tag"/>
+                <field name="category_id"/>
+                <field name="facility_id"/>
+                <field name="responsible_id"/>
+                <field name="manufacturer_id"/>
+                <field name="department_id"/>
+
+                <!-- FIXED Date Filters with proper domain syntax -->
+                <filter string="This Year" name="filter_this_year"
+                        domain="[('purchase_date', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <filter string="Last 30 Days" name="filter_last_30_days"
+                        domain="[('purchase_date', '&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Last 6 Months" name="filter_last_6_months"
+                        domain="[('purchase_date', '&gt;=', (context_today() - datetime.timedelta(days=180)).strftime('%Y-%m-%d'))]"/>
+
+                <separator/>
+
+                <!-- State Filters -->
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Active" name="filter_active" domain="[('state', '=', 'active')]"/>
+                <filter string="Maintenance" name="filter_maintenance" domain="[('state', '=', 'maintenance')]"/>
+                <filter string="Disposed" name="filter_disposed" domain="[('state', '=', 'disposed')]"/>
+
+                <separator/>
+
+                <!-- Condition Filters -->
+                <filter string="New" name="filter_new" domain="[('condition', '=', 'new')]"/>
+                <filter string="Good" name="filter_good" domain="[('condition', '=', 'good')]"/>
+                <filter string="Fair" name="filter_fair" domain="[('condition', '=', 'fair')]"/>
+                <filter string="Poor" name="filter_poor" domain="[('condition', '=', 'poor')]"/>
+
+                <separator/>
+
+                <!-- Warranty Filters -->
+                <filter string="Valid Warranty" name="filter_warranty_valid" domain="[('warranty_status', '=', 'valid')]"/>
+                <filter string="Expired Warranty" name="filter_warranty_expired" domain="[('warranty_status', '=', 'expired')]"/>
+                <filter string="No Warranty" name="filter_no_warranty" domain="[('warranty_status', '=', 'none')]"/>
+
+                <separator/>
+
+                <!-- Active/Inactive Filters -->
+                <filter string="Active Records" name="filter_active_records" domain="[('active', '=', True)]"/>
+                <filter string="Inactive Records" name="filter_inactive_records" domain="[('active', '=', False)]"/>
+
+                <!-- Maintenance Due Filter -->
+                <filter string="Maintenance Due" name="filter_maintenance_due" domain="[('maintenance_due', '=', True)]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="group_by_category" context="{'group_by': 'category_id'}"/>
+                    <filter string="Facility/Project" name="group_by_facility" context="{'group_by': 'facility_id'}"/>
+                    <filter string="State" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Condition" name="group_by_condition" context="{'group_by': 'condition'}"/>
+                    <filter string="Warranty Status" name="group_by_warranty" context="{'group_by': 'warranty_status'}"/>
+                    <filter string="Responsible Person" name="group_by_responsible" context="{'group_by': 'responsible_id'}"/>
+                    <filter string="Department" name="group_by_department" context="{'group_by': 'department_id'}"/>
+                    <filter string="Manufacturer" name="group_by_manufacturer" context="{'group_by': 'manufacturer_id'}"/>
+                    <filter string="Purchase Month" name="group_by_month"
+                            context="{'group_by': 'purchase_date:month'}"/>
+                    <filter string="Purchase Year" name="group_by_year"
+                            context="{'group_by': 'purchase_date:year'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Asset Calendar View -->
+    <record id="view_asset_calendar" model="ir.ui.view">
+        <field name="name">Asset Calendar</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <calendar date_start="purchase_date" string="Asset Timeline" mode="month" color="condition">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="condition"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- FIXED Dashboard Action with proper context -->
     <record id="action_asset_dashboard" model="ir.actions.act_window">
         <field name="name">Asset Dashboard</field>
         <field name="res_model">facilities.asset</field>
-        <field name="view_mode">graph,pivot,kanban</field>
-        <field name="context">{'search_default_group_by_category': 1}</field>
+        <field name="view_mode">kanban,graph,pivot,calendar,tree,form</field>
+        <field name="context">{
+            'search_default_group_by_category': 1,
+            'search_default_filter_active_records': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first facility asset!
+            </p>
+            <p>
+                Track and manage your facility assets with comprehensive analytics including:
+                <br/>• Asset value tracking
+                <br/>• Warranty monitoring
+                <br/>• Condition management
+                <br/>• Maintenance scheduling
+            </p>
+        </field>
+    </record>
+
+    <!-- Secondary Actions for specific views -->
+    <record id="action_asset_value_analysis" model="ir.actions.act_window">
+        <field name="name">Asset Value Analysis</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">graph,pivot</field>
+        <field name="context">{
+            'search_default_group_by_category': 1
+        }</field>
+    </record>
+
+    <record id="action_warranty_overview" model="ir.actions.act_window">
+        <field name="name">Warranty Overview</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,tree</field>
+        <field name="context">{
+            'search_default_group_by_warranty': 1
+        }</field>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+    </record>
+
+    <!-- State-based Actions -->
+    <record id="action_assets_by_state" model="ir.actions.act_window">
+        <field name="name">Assets by State</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,tree</field>
+        <field name="context">{
+            'search_default_group_by_state': 1
+        }</field>
+    </record>
+
+    <record id="action_maintenance_due" model="ir.actions.act_window">
+        <field name="name">Maintenance Due</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">tree,kanban</field>
+        <field name="domain">[('maintenance_due', '=', True)]</field>
+    </record>
+
+    <!-- Alternative Graph Views for different analyses -->
+    <record id="view_asset_graph_by_state" model="ir.ui.view">
+        <field name="name">Asset Graph by State</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <graph type="pie" sample="1">
+                <field name="state" type="row"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_asset_graph_value" model="ir.ui.view">
+        <field name="name">Asset Value Graph</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <graph type="bar" sample="1">
+                <field name="category_id" type="row"/>
+                <field name="purchase_value" type="measure"/>
+                <field name="current_value" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Simple Tree View for List Mode -->
+    <record id="view_asset_tree" model="ir.ui.view">
+        <field name="name">Asset Tree</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <tree sample="1">
+                <field name="name"/>
+                <field name="asset_code"/>
+                <field name="category_id"/>
+                <field name="state"/>
+                <field name="condition"/>
+                <field name="purchase_value"/>
+                <field name="warranty_status"/>
+                <field name="responsible_id"/>
+            </tree>
+        </field>
     </record>
 </odoo>

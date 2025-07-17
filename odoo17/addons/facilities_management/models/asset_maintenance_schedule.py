@@ -1,8 +1,7 @@
 # models/asset_maintenance_schedule.py
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-from datetime import datetime, timedelta, date
-from dateutil.relativedelta import relativedelta # Ensure 'relativedelta' is imported
+from dateutil.relativedelta import relativedelta
 
 class AssetMaintenanceSchedule(models.Model):
     _name = 'asset.maintenance.schedule'
@@ -28,10 +27,10 @@ class AssetMaintenanceSchedule(models.Model):
     ], string='Recurrence', default='monthly', required=True, tracking=True)
 
     last_maintenance_date = fields.Date(string='Last Maintenance Date', tracking=True)
-    next_maintenance_date = fields.Date(string='Next Scheduled Date', compute='_compute_next_maintenance_date', store=True, tracking=True, readonly=False) # Make readonly=False to allow manual override
+    next_maintenance_date = fields.Date(string='Next Scheduled Date', compute='_compute_next_maintenance_date', store=True, tracking=True, readonly=False)
     notes = fields.Text(string='Notes')
 
-    active = fields.Boolean(string='Active', default=True, tracking=True) # Changed default to True, common for new schedules
+    active = fields.Boolean(string='Active', default=True, tracking=True)
 
     status = fields.Selection([
         ('draft', 'Draft'),
@@ -39,9 +38,8 @@ class AssetMaintenanceSchedule(models.Model):
         ('in_progress', 'In Progress'),
         ('done', 'Done'),
         ('cancelled', 'Cancelled')
-    ], string='Status', default='planned', tracking=True) # Changed default to 'planned' for schedules
+    ], string='Status', default='planned', tracking=True)
 
-    # NEW FIELD: Link to Job Plan
     job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan',
                                   help="Select a job plan to associate with this maintenance schedule. "
                                        "Tasks from this plan will be copied to generated work orders.")
@@ -58,7 +56,6 @@ class AssetMaintenanceSchedule(models.Model):
         for rec in self:
             if rec.last_maintenance_date and rec.interval_number > 0:
                 current_date = rec.last_maintenance_date
-                # 'relativedelta' is already imported at the top
                 if rec.interval_type == 'daily':
                     rec.next_maintenance_date = current_date + relativedelta(days=rec.interval_number)
                 elif rec.interval_type == 'weekly':
@@ -79,6 +76,28 @@ class AssetMaintenanceSchedule(models.Model):
         for rec in self:
             rec.workorder_count = len(rec.workorder_ids)
 
-
     def action_generate_work_order(self):
-        """ Manually generates a work order from the schedule """
+        """Generates a work order for the maintenance schedule."""
+        for schedule in self:
+            if not schedule.active:
+                raise UserError(_("Cannot generate a work order for an inactive schedule."))
+            if not schedule.next_maintenance_date:
+                raise UserError(_("Next maintenance date is not set for the schedule: %s.") % schedule.name)
+
+            # Create the work order
+            work_order_vals = {
+                'name': _('New'),
+                'asset_id': schedule.asset_id.id,
+                'schedule_id': schedule.id,
+                'work_order_type': schedule.maintenance_type,
+                'start_date': schedule.next_maintenance_date,
+                'job_plan_id': schedule.job_plan_id.id if schedule.job_plan_id else False,
+            }
+            work_order = self.env['maintenance.workorder'].create(work_order_vals)
+
+            # Update the last maintenance date and compute the next maintenance date
+            schedule.last_maintenance_date = schedule.next_maintenance_date
+            schedule._compute_next_maintenance_date()
+
+            # Log the creation
+            schedule.message_post(body=_("Work order %s has been generated.") % work_order.name)

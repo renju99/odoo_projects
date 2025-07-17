@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Tree View for Asset Maintenance Schedule -->
     <record id="view_asset_maintenance_schedule_tree" model="ir.ui.view">
@@ -15,6 +14,8 @@
                 <field name="next_maintenance_date"/>
                 <field name="active"/>
                 <field name="job_plan_id"/>
+                <!-- Add Action Button -->
+                <button name="action_generate_work_order" type="object" string="Generate Work Order" class="btn-primary"/>
             </tree>
         </field>
     </record>
@@ -33,6 +34,8 @@
                             invisible="active"
                             class="oe_highlight"
                             help="Activate the schedule. It will appear in default lists."/>
+                    <!-- Add Button -->
+                    <button name="action_generate_work_order" type="object" string="Generate Work Order" class="oe_highlight"/>
                 </header>
                 <sheet>
                     <group>
@@ -40,7 +43,7 @@
                             <field name="name"/>
                             <field name="asset_id"/>
                             <field name="maintenance_type"/>
-                            <field name="job_plan_id"/> <!-- THIS IS THE ADDED FIELD -->
+                            <field name="job_plan_id"/>
                         </group>
                         <group>
                             <field name="last_maintenance_date"/>
@@ -91,5 +94,4 @@
             </p>
         </field>
     </record>
-
 </odoo>

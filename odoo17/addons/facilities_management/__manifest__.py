@@ -45,7 +45,7 @@
         # Reporting
         'views/maintenance_report_views.xml',
         'reports/maintenance_report.xml',
-        'views/asset_dashboard_community.xml',
+        'views/asset_dashboard_views.xml',
 
         # UI Menus (typically loaded last as they reference actions and models defined in previous files)
         'views/facility_asset_menus.xml',
