@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Asset Search View for Calendar -->
+    <record id="view_facilities_asset_search_calendar" model="ir.ui.view">
+        <field name="name">facilities.asset.search.calendar</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="asset_tag"/>
+                <field name="asset_code"/>
+                <field name="category_id"/>
+                <field name="facility_id"/>
+                <field name="condition"/>
+
+                <!-- Filters -->
+                <filter name="active_assets" string="Active Assets"
+                        domain="[('active', '=', True)]"/>
+
+                <filter name="has_warranty" string="Has Warranty"
+                        domain="[('warranty_expiration_date', '!=', False)]"/>
+
+                <filter name="purchased_assets" string="Has Purchase Date"
+                        domain="[('purchase_date', '!=', False)]"/>
+
+                <separator/>
+
+                <!-- Group By -->
+                <group expand="0" string="Group By">
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_condition" string="Condition"
+                            context="{'group_by': 'condition'}"/>
+                    <filter name="group_facility" string="Facility"
+                            context="{'group_by': 'facility_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Asset Calendar View - Warranty Dates -->
+    <record id="view_facilities_asset_calendar_warranty" model="ir.ui.view">
+        <field name="name">facilities.asset.calendar.warranty</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <calendar string="Asset Warranty Calendar"
+                      date_start="warranty_expiration_date"
+                      color="condition">
+                <field name="name"/>
+                <field name="asset_tag"/>
+                <field name="category_id"/>
+                <field name="condition"/>
+                <field name="facility_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Asset Calendar View - Purchase Dates -->
+    <record id="view_facilities_asset_calendar_purchase" model="ir.ui.view">
+        <field name="name">facilities.asset.calendar.purchase</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <calendar string="Asset Purchase Calendar"
+                      date_start="purchase_date"
+                      color="category_id">
+                <field name="name"/>
+                <field name="asset_tag"/>
+                <field name="asset_code"/>
+                <field name="category_id"/>
+                <field name="purchase_value"/>
+                <field name="condition"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Asset Calendar View - Installation Dates -->
+    <record id="view_facilities_asset_calendar_installation" model="ir.ui.view">
+        <field name="name">facilities.asset.calendar.installation</field>
+        <field name="model">facilities.asset</field>
+        <field name="arch" type="xml">
+            <calendar string="Asset Installation Calendar"
+                      date_start="installation_date"
+                      color="category_id">
+                <field name="name"/>
+                <field name="asset_tag"/>
+                <field name="category_id"/>
+                <field name="facility_id"/>
+                <field name="responsible_id"/>
+                <field name="condition"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_asset_warranty_calendar" model="ir.actions.act_window">
+        <field name="name">Asset Warranty Calendar</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
+        <field name="search_view_id" ref="view_facilities_asset_search_calendar"/>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+        <field name="context">{'search_default_has_warranty': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No assets with warranty dates found!
+            </p>
+            <p>
+                Add warranty expiration dates to your assets to see them in this calendar.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_asset_purchase_timeline" model="ir.actions.act_window">
+    <field name="name">Purchase Timeline</field>
+    <field name="res_model">facilities.asset</field>
+    <field name="view_mode">calendar,tree,form</field>
+    <field name="view_id" ref="view_facilities_asset_calendar_purchase"/>
+    <field name="search_view_id" ref="view_facilities_asset_search_calendar"/>
+    <field name="domain">[('purchase_date', '!=', False)]</field>
+    <field name="context">{'search_default_purchased_assets': 1}</field>
+    <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+            No assets with purchase dates found!
+        </p>
+        <p>
+            Add purchase dates to your assets to see them in this calendar.
+        </p>
+    </field>
+</record>
+
+    <record id="action_asset_purchase_calendar" model="ir.actions.act_window">
+        <field name="name">Asset Purchase Calendar</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_purchase"/>
+        <field name="search_view_id" ref="view_facilities_asset_search_calendar"/>
+        <field name="domain">[('purchase_date', '!=', False)]</field>
+        <field name="context">{'search_default_purchased_assets': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No assets with purchase dates found!
+            </p>
+            <p>
+                Add purchase dates to your assets to see them in this calendar.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_asset_installation_calendar" model="ir.actions.act_window">
+        <field name="name">Asset Installation Calendar</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_installation"/>
+        <field name="search_view_id" ref="view_facilities_asset_search_calendar"/>
+        <field name="domain">[('installation_date', '!=', False)]</field>
+        <field name="context">{'search_default_active_assets': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No assets with installation dates found!
+            </p>
+            <p>
+                Add installation dates to your assets to see them in this calendar.
+            </p>
+        </field>
+    </record>
+</odoo>
