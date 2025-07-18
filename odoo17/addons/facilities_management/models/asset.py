@@ -317,42 +317,34 @@ class FacilityAsset(models.Model):
 
     @api.depends('warranty_expiration_date')
     def _compute_warranty_status(self):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self)
         for asset in self:
             if not asset.warranty_expiration_date:
                 asset.warranty_status = 'none'
-            elif asset.warranty_expiration_date >= today:
-                asset.warranty_status = 'valid'
-            else:
+            elif asset.warranty_expiration_date < today:
                 asset.warranty_status = 'expired'
-
-    @api.depends('purchase_value', 'purchase_date', 'expected_lifespan')
-    def _compute_current_value(self):
-        today = fields.Date.today()
-        for asset in self:
-            if not asset.purchase_value:
-                asset.current_value = 0
-            elif not asset.purchase_date or not asset.expected_lifespan:
-                asset.current_value = asset.purchase_value
             else:
-                # Simple straight-line depreciation calculation
-                years_passed = (today - asset.purchase_date).days / 365.25
-                if years_passed >= asset.expected_lifespan:
-                    asset.current_value = 0
-                else:
-                    annual_depreciation = asset.purchase_value / asset.expected_lifespan
-                    total_depreciation = annual_depreciation * years_passed
-                    asset.current_value = max(0, asset.purchase_value - total_depreciation)
+                asset.warranty_status = 'valid'
+
+    @api.depends('purchase_value', 'age_in_years', 'expected_lifespan')
+    def _compute_current_value(self):
+        for asset in self:
+            if asset.purchase_value and asset.expected_lifespan and asset.age_in_years:
+                # Simple straight-line depreciation
+                depreciation_rate = min(asset.age_in_years / asset.expected_lifespan, 1.0)
+                asset.current_value = asset.purchase_value * (1 - depreciation_rate)
+            else:
+                asset.current_value = asset.purchase_value or 0.0
 
     @api.depends('purchase_date')
     def _compute_age_in_years(self):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self)
         for asset in self:
             if asset.purchase_date:
                 delta = today - asset.purchase_date
                 asset.age_in_years = delta.days / 365.25
             else:
-                asset.age_in_years = 0
+                asset.age_in_years = 0.0
 
     @api.depends('warranty_expiration_date')
     def _compute_warranty_days_remaining(self):
@@ -364,16 +356,14 @@ class FacilityAsset(models.Model):
             else:
                 asset.warranty_days_remaining = 0
 
-    @api.depends('maintenance_ids', 'maintenance_ids.next_maintenance_date')
+    @api.depends('maintenance_ids.next_maintenance_date')
     def _compute_maintenance_due(self):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self)
         for asset in self:
-            # Check if any active maintenance schedule is due within 7 days
-            due_maintenance = asset.maintenance_ids.filtered(
-                lambda m: m.active and m.next_maintenance_date and
-                          m.next_maintenance_date <= today + timedelta(days=7)
+            due_schedules = asset.maintenance_ids.filtered(
+                lambda s: s.active and s.next_maintenance_date and s.next_maintenance_date <= today
             )
-            asset.maintenance_due = bool(due_maintenance)
+            asset.maintenance_due = bool(due_schedules)
 
     def _compute_is_enterprise(self):
         """Check if web_enterprise module is installed"""
