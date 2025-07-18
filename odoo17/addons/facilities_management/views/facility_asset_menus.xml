@@ -298,6 +298,16 @@
         </field>
     </record>
 
+    <record id="action_asset_performance_dashboard" model="ir.actions.act_window">
+        <field name="name">Performance Dashboard</field>
+        <field name="res_model">facilities.asset.performance</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="context">{
+            'search_default_last_30_days': 1,
+            'search_default_group_by_asset': 1
+        }</field>
+    </record>
+
     <!-- ROOT MENU -->
     <menuitem id="menu_facilities_root"
               name="Facility Management"
@@ -540,5 +550,25 @@
               parent="menu_facilities_config"
               sequence="20"
               groups="base.group_system"/>
+    <menuitem id="menu_asset_performance_item"
+              name="Performance Tracking"
+              parent="menu_asset_monitoring"
+              action="action_asset_performance"
+              sequence="25"/>
+
+    <menuitem id="menu_asset_performance_dashboard_item"
+              name="Performance Dashboard"
+              parent="menu_asset_analytics"
+              action="action_asset_performance_dashboard"
+              sequence="45"/>
+
+    <!-- Add to Configuration section -->
+    <menuitem id="menu_asset_downtime_reasons_item"
+              name="Downtime Reasons"
+              parent="menu_asset_config"
+              action="action_asset_downtime_reasons"
+              sequence="15"
+              groups="base.group_system"/>
+
 
 </odoo>

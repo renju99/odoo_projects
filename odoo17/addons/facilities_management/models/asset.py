@@ -68,6 +68,7 @@ class FacilityAsset(models.Model):
 
     # Financial
     purchase_value = fields.Monetary(string='Purchase Value', currency_field='currency_id', tracking=True)
+    current_value = fields.Monetary(string='Current Value', currency_field='currency_id', tracking=True)
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
@@ -94,7 +95,7 @@ class FacilityAsset(models.Model):
         max_height=256
     )
 
-    # COMPUTED FIELDS - FIXED
+    # COMPUTED FIELDS
     warranty_status = fields.Selection(
         [
             ('valid', 'Valid'),
@@ -103,66 +104,22 @@ class FacilityAsset(models.Model):
         ],
         string='Warranty Status',
         compute='_compute_warranty_status',
-        store=True
-    )
-
-    # Simplified current_value without depreciation dependency
-    current_value = fields.Monetary(
-        string='Current Value',
-        compute='_compute_current_value',
         store=True,
-        currency_field='currency_id'
+        tracking=True
     )
 
-    age_in_years = fields.Float(
-        string='Age (Years)',
-        compute='_compute_age_in_years',
-        store=True
-    )
-
-    warranty_days_remaining = fields.Integer(
-        string='Warranty Days Remaining',
-        compute='_compute_warranty_days_remaining',
-        store=True
-    )
-
-    # Simplified maintenance_due without dependency on non-existent fields
     maintenance_due = fields.Boolean(
         string='Maintenance Due',
         compute='_compute_maintenance_due',
         store=True
     )
 
-    # CONSTRAINTS
-    _sql_constraints = [
-        ('unique_asset_code', 'UNIQUE(asset_code)', 'Asset code must be unique!'),
-        ('positive_purchase_value', 'CHECK(purchase_value >= 0)', 'Purchase value must be positive!'),
-        ('positive_expected_lifespan', 'CHECK(expected_lifespan > 0)', 'Expected lifespan must be positive!'),
-    ]
-
-    # COMPUTED METHOD IMPLEMENTATIONS
-    @api.depends('barcode')
-    def _compute_barcode_image(self):
-        for record in self:
-            if not qrcode or not record.barcode:
-                record.barcode_image = False
-            else:
-                try:
-                    qr = qrcode.QRCode(
-                        version=1,
-                        error_correction=qrcode.constants.ERROR_CORRECT_L,
-                        box_size=10,
-                        border=4,
-                    )
-                    qr.add_data(record.barcode)
-                    qr.make(fit=True)
-
-                    img = qr.make_image(fill_color="black", back_color="white")
-                    buf = io.BytesIO()
-                    img.save(buf, format='PNG')
-                    record.barcode_image = base64.b64encode(buf.getvalue())
-                except Exception as e:
-                    record.barcode_image = False
+    # New field for dashboard compatibility
+    is_enterprise = fields.Boolean(
+        string="Enterprise Mode",
+        compute='_compute_is_enterprise',
+        help="Technical field to check if enterprise features are available"
+    )
 
     @api.depends('warranty_expiration_date')
     def _compute_warranty_status(self):
@@ -175,206 +132,76 @@ class FacilityAsset(models.Model):
             else:
                 asset.warranty_status = 'expired'
 
-    # FIXED: Simplified current_value calculation
-    @api.depends('purchase_value', 'purchase_date', 'expected_lifespan')
-    def _compute_current_value(self):
-        today = fields.Date.today()
-        for asset in self:
-            if not asset.purchase_value:
-                asset.current_value = 0
-            elif not asset.purchase_date or not asset.expected_lifespan:
-                asset.current_value = asset.purchase_value
-            else:
-                # Simple straight-line depreciation calculation
-                years_passed = (today - asset.purchase_date).days / 365.25
-                if years_passed >= asset.expected_lifespan:
-                    asset.current_value = 0
-                else:
-                    annual_depreciation = asset.purchase_value / asset.expected_lifespan
-                    total_depreciation = annual_depreciation * years_passed
-                    asset.current_value = max(0, asset.purchase_value - total_depreciation)
-
-    @api.depends('purchase_date')
-    def _compute_age_in_years(self):
-        today = fields.Date.today()
-        for asset in self:
-            if asset.purchase_date:
-                delta = today - asset.purchase_date
-                asset.age_in_years = delta.days / 365.25
-            else:
-                asset.age_in_years = 0
-
-    @api.depends('warranty_expiration_date')
-    def _compute_warranty_days_remaining(self):
-        today = fields.Date.today()
-        for asset in self:
-            if asset.warranty_expiration_date:
-                delta = asset.warranty_expiration_date - today
-                asset.warranty_days_remaining = delta.days
-            else:
-                asset.warranty_days_remaining = 0
-
-    # FIXED: Simplified maintenance due calculation
-    @api.depends('purchase_date', 'condition')
+    @api.depends('maintenance_ids.next_maintenance_date')
     def _compute_maintenance_due(self):
+        today = fields.Date.today()
         for asset in self:
-            # Simple logic: assets older than 1 year in poor condition need maintenance
-            if asset.purchase_date and asset.condition == 'poor':
-                years_old = (fields.Date.today() - asset.purchase_date).days / 365.25
-                asset.maintenance_due = years_old > 1
+            due_maintenances = asset.maintenance_ids.filtered(
+                lambda m: m.active and m.next_maintenance_date and m.next_maintenance_date <= today
+            )
+            asset.maintenance_due = bool(due_maintenances)
+
+    def _compute_is_enterprise(self):
+        """Check if web_enterprise module is installed"""
+        enterprise_installed = self.env['ir.module.module'].search_count([
+            ('name', '=', 'web_enterprise'),
+            ('state', '=', 'installed')
+        ])
+        for asset in self:
+            asset.is_enterprise = enterprise_installed
+
+    @api.depends('barcode')
+    def _compute_barcode_image(self):
+        for asset in self:
+            if asset.barcode and qrcode:
+                try:
+                    qr = qrcode.QRCode(version=1, box_size=4, border=1)
+                    qr.add_data(asset.barcode)
+                    qr.make(fit=True)
+                    img = qr.make_image()
+
+                    # Convert to base64
+                    buffered = io.BytesIO()
+                    img.save(buffered, format="PNG")
+                    img_str = base64.b64encode(buffered.getvalue())
+                    asset.barcode_image = img_str
+                except Exception:
+                    asset.barcode_image = False
             else:
-                asset.maintenance_due = False
+                asset.barcode_image = False
 
-    # VALIDATION METHODS
-    @api.constrains('purchase_date')
-    def _check_purchase_date(self):
-        for asset in self:
-            if asset.purchase_date and asset.purchase_date > fields.Date.today():
-                raise ValidationError("Purchase date cannot be in the future!")
-
-    @api.constrains('warranty_expiration_date', 'purchase_date')
-    def _check_warranty_date(self):
-        for asset in self:
-            if (asset.warranty_expiration_date and asset.purchase_date and
-                    asset.warranty_expiration_date < asset.purchase_date):
-                raise ValidationError("Warranty expiration date must be after purchase date!")
-
-    @api.constrains('installation_date', 'purchase_date')
-    def _check_installation_date(self):
-        for asset in self:
-            if (asset.installation_date and asset.purchase_date and
-                    asset.installation_date < asset.purchase_date):
-                raise ValidationError("Installation date must be after purchase date!")
-
-    # CRUD OPERATIONS
-    @api.model
-    def create(self, vals):
-        # Generate barcode if not provided
-        if not vals.get('barcode'):
-            vals['barcode'] = self._generate_barcode()
-
-        # Generate asset code if not provided
-        if not vals.get('asset_code'):
-            vals['asset_code'] = self.env['ir.sequence'].next_by_code('facilities.asset.code') or '/'
-
-        rec = super().create(vals)
-        rec._compute_barcode_image()
-        return rec
-
-    def write(self, vals):
-        # Track state changes
-        if 'state' in vals:
-            for record in self:
-                old_state = record.state
-                record.message_post(
-                    body=f"Asset state changed from {dict(record._fields['state'].selection)[old_state]} to {dict(record._fields['state'].selection)[vals['state']]}"
-                )
-
-        res = super().write(vals)
-
-        # Regenerate barcode if changed
-        if 'barcode' in vals:
-            self._compute_barcode_image()
-
-        return res
-
-    # BUSINESS METHODS
-    def _generate_barcode(self):
-        """Generate a unique barcode for the asset"""
-        return self.env['ir.sequence'].next_by_code(
-            'facilities.asset.barcode') or f"AST{self.env['ir.sequence'].next_by_code('facilities.asset')}"
-
-    def action_set_to_active(self):
-        """Set asset to active state"""
-        for record in self:
-            if record.state == 'draft':
-                record.state = 'active'
-                record.message_post(body="Asset activated and ready for use.")
-            else:
-                raise ValidationError(f"Cannot activate asset from {record.state} state!")
-
-    def action_set_to_maintenance(self):
-        """Set asset to maintenance state"""
-        for record in self:
-            if record.state in ['active', 'draft']:
-                record.state = 'maintenance'
-                record.message_post(body="Asset sent for maintenance.")
-            else:
-                raise ValidationError(f"Cannot send asset to maintenance from {record.state} state!")
-
-    def action_set_to_disposed(self):
-        """Set asset to disposed state"""
-        for record in self:
-            record.state = 'disposed'
-            record.active = False
-            record.message_post(body="Asset disposed.")
-
-    def action_open_dashboard(self):
-        """Enhanced dashboard action"""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Dashboard - {self.name}',
-            'res_model': 'facilities.asset',
-            'view_mode': 'graph,pivot',
-            'views': [
-                (False, 'graph'),
-                (False, 'pivot')
-            ],
-            'target': 'current',
-            'domain': [('id', '=', self.id)],
-            'context': dict(self.env.context),
-        }
-
-    def action_regenerate_qr_code(self):
-        """Force QR code regeneration with better error handling"""
-        for rec in self:
-            if not rec.barcode:
-                rec.barcode = rec._generate_barcode()
-            rec._compute_barcode_image()
-            rec.message_post(body="QR Code regenerated successfully.")
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('asset_code'):
+                vals['asset_code'] = self.env['ir.sequence'].next_by_code('facilities.asset') or 'AS0000'
+            if not vals.get('barcode'):
+                vals['barcode'] = self.env['ir.sequence'].next_by_code('facilities.asset.barcode') or 'AS0000'
+        return super().create(vals_list)
 
     def name_get(self):
-        """Enhanced name display"""
-        result = []
-        for record in self:
-            name = record.name
-            if record.asset_code:
-                name = f"{name} [{record.asset_code}]"
-            if record.state != 'active':
-                name = f"{name} ({dict(record._fields['state'].selection)[record.state]})"
-            result.append((record.id, name))
-        return result
+        return [(record.id, f"{record.name} [{record.asset_code}]") for record in self]
 
-    # REPORTING METHODS
-    def get_asset_summary(self):
-        """Get summary information for reporting"""
+    def action_open_dashboard(self):
+        """Open appropriate dashboard view based on availability of enterprise"""
         self.ensure_one()
-        return {
-            'name': self.name,
-            'code': self.asset_code,
-            'current_value': self.current_value,
-            'age_years': self.age_in_years,
-            'condition': dict(self._fields['condition'].selection)[self.condition],
-            'state': dict(self._fields['state'].selection)[self.state],
-            'warranty_status': dict(self._fields['warranty_status'].selection)[self.warranty_status],
-            'maintenance_due': self.maintenance_due,
-        }
-
-    @api.model
-    def get_assets_by_state(self):
-        """Get asset counts grouped by state"""
-        return {
-            state[0]: self.search_count([('state', '=', state[0])])
-            for state in self._fields['state'].selection
-        }
-
-    @api.model
-    def get_warranty_expiring_soon(self, days=30):
-        """Get assets with warranty expiring in the next X days"""
-        target_date = fields.Date.today() + timedelta(days=days)
-        return self.search([
-            ('warranty_expiration_date', '<=', target_date),
-            ('warranty_expiration_date', '>=', fields.Date.today()),
-            ('state', '!=', 'disposed')
-        ])
+        if self.is_enterprise:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Asset Dashboard (Enterprise)',
+                'res_model': 'facilities.asset',
+                'view_mode': 'dashboard',
+                'views': [(False, 'dashboard')],
+                'target': 'current',
+                'context': dict(self.env.context),
+            }
+        else:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Asset Dashboard (Community)',
+                'res_model': 'facilities.asset',
+                'view_mode': 'kanban,graph,pivot',
+                'views': [(False, 'kanban'), (False, 'graph'), (False, 'pivot')],
+                'target': 'current',
+                'context': dict(self.env.context),
+            }

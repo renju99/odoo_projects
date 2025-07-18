@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Asset Performance Tree View -->
+    <record id="view_asset_performance_tree" model="ir.ui.view">
+        <field name="name">facilities.asset.performance.tree</field>
+        <field name="model">facilities.asset.performance</field>
+        <field name="arch" type="xml">
+            <tree string="Asset Performance" decoration-danger="performance_status == 'poor'"
+                  decoration-warning="performance_status == 'average'"
+                  decoration-success="performance_status == 'excellent'">
+                <field name="date"/>
+                <field name="asset_id"/>
+                <field name="shift"/>
+                <field name="expected_daily_runtime" sum="Total Expected"/>
+                <field name="actual_runtime" sum="Total Actual"/>
+                <field name="downtime_hours" sum="Total Downtime"/>
+                <field name="runtime_percentage" widget="percentage"/>
+                <field name="availability_percentage" widget="percentage"/>
+                <field name="utilization_percentage" widget="percentage"/>
+                <field name="performance_status"/>
+                <field name="operator_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Asset Performance Form View -->
+    <record id="view_asset_performance_form" model="ir.ui.view">
+        <field name="name">facilities.asset.performance.form</field>
+        <field name="model">facilities.asset.performance</field>
+        <field name="arch" type="xml">
+            <form string="Asset Performance">
+                <header>
+                    <field name="performance_status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="date"/>
+                            <field name="shift"/>
+                            <field name="operator_id"/>
+                        </group>
+                        <group>
+                            <field name="expected_daily_runtime" widget="float_time"/>
+                            <field name="actual_runtime" widget="float_time"/>
+                            <field name="downtime_hours" widget="float_time"/>
+                        </group>
+                    </group>
+
+                    <group string="Performance Metrics" col="3">
+                        <field name="runtime_percentage" widget="percentage"/>
+                        <field name="availability_percentage" widget="percentage"/>
+                        <field name="utilization_percentage" widget="percentage"/>
+                    </group>
+
+                    <group string="Downtime Information" col="1">
+                        <field name="downtime_reason_ids" widget="many2many_tags"
+                               options="{'color_field': 'color', 'no_create': True}"/>
+                        <field name="notes" placeholder="Additional notes about performance, issues, or observations..."/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Asset Performance Graph View -->
+    <record id="view_asset_performance_graph" model="ir.ui.view">
+        <field name="name">facilities.asset.performance.graph</field>
+        <field name="model">facilities.asset.performance</field>
+        <field name="arch" type="xml">
+            <graph string="Asset Performance Analysis" type="line">
+                <field name="date" type="row"/>
+                <field name="availability_percentage" type="measure"/>
+                <field name="runtime_percentage" type="measure"/>
+                <field name="utilization_percentage" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Asset Performance Pivot View -->
+    <record id="view_asset_performance_pivot" model="ir.ui.view">
+        <field name="name">facilities.asset.performance.pivot</field>
+        <field name="model">facilities.asset.performance</field>
+        <field name="arch" type="xml">
+            <pivot string="Performance Analysis">
+                <field name="asset_id" type="row"/>
+                <field name="date" type="col" interval="month"/>
+                <field name="availability_percentage" type="measure"/>
+                <field name="runtime_percentage" type="measure"/>
+                <field name="actual_runtime" type="measure"/>
+                <field name="downtime_hours" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Asset Performance Search View -->
+    <record id="view_asset_performance_search" model="ir.ui.view">
+        <field name="name">facilities.asset.performance.search</field>
+        <field name="model">facilities.asset.performance</field>
+        <field name="arch" type="xml">
+            <search string="Asset Performance">
+                <field name="asset_id"/>
+                <field name="date"/>
+                <field name="operator_id"/>
+                <field name="performance_status"/>
+
+                <filter string="Today" name="today"
+                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="This Week" name="this_week"
+                        domain="[('date', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Last 30 Days" name="last_30_days"
+                        domain="[('date', '&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="Poor Performance" name="poor_performance"
+                        domain="[('performance_status', '=', 'poor')]"/>
+                <filter string="Good Performance" name="good_performance"
+                        domain="[('performance_status', 'in', ['good', 'excellent'])]"/>
+
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Asset" name="group_by_asset" context="{'group_by': 'asset_id'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                    <filter string="Shift" name="group_by_shift" context="{'group_by': 'shift'}"/>
+                    <filter string="Performance Status" name="group_by_status" context="{'group_by': 'performance_status'}"/>
+                    <filter string="Operator" name="group_by_operator" context="{'group_by': 'operator_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Downtime Reasons Tree View -->
+    <record id="view_asset_downtime_reason_tree" model="ir.ui.view">
+        <field name="name">asset.downtime.reason.tree</field>
+        <field name="model">asset.downtime.reason</field>
+        <field name="arch" type="xml">
+            <tree string="Downtime Reasons">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Downtime Reasons Form View -->
+    <record id="view_asset_downtime_reason_form" model="ir.ui.view">
+        <field name="name">asset.downtime.reason.form</field>
+        <field name="model">asset.downtime.reason</field>
+        <field name="arch" type="xml">
+            <form string="Downtime Reason">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="color" widget="color_picker"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_asset_performance" model="ir.actions.act_window">
+        <field name="name">Asset Performance</field>
+        <field name="res_model">facilities.asset.performance</field>
+        <field name="view_mode">tree,form,graph,pivot</field>
+        <field name="context">{
+            'search_default_last_30_days': 1,
+            'search_default_group_by_asset': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Track your first asset performance!
+            </p>
+            <p>
+                Monitor daily runtime, downtime, and efficiency metrics for your assets.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_asset_downtime_reasons" model="ir.actions.act_window">
+        <field name="name">Downtime Reasons</field>
+        <field name="res_model">asset.downtime.reason</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create downtime reason codes!
+            </p>
+            <p>
+                Define standardized reasons for asset downtime to improve tracking and analysis.
+            </p>
+        </field>
+    </record>
+
+</odoo>
