@@ -26,10 +26,7 @@ from . import facility
 from . import asset_category
 from . import asset
 
-# 3. Asset Performance (depends on asset)
-from . import asset_performance
-
-# 4. Transactional Models (Depend on many of the above)
+# 3. Transactional Models (Depend on many of the above)
 from . import maintenance_request
 from . import maintenance_workorder
 from . import maintenance_workorder_assignment
@@ -37,7 +34,7 @@ from . import maintenance_workorder_part_line
 from . import maintenance_workorder_task
 from . import stock_picking
 
-# 5. Scheduled/Predictive Maintenance (Often depend on assets and work orders)
+# 4. Scheduled/Predictive Maintenance (Often depend on assets and work orders)
 from . import asset_maintenance_schedule
 from . import predictive_maintenance
 from . import asset_depreciation

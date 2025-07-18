@@ -41,8 +41,7 @@
         'views/maintenance_workorder_part_line_views.xml',
         'views/product_views.xml',
         'views/maintenance_job_plan_views.xml',
-        'views/sla_views.xml',
-        'views/asset_performance_views.xml',
+        'views/sla_views.xml',  # Add this line
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',

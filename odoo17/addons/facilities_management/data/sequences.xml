@@ -62,13 +62,4 @@
         <field name="prefix">AS</field>
         <field name="padding">4</field>
     </record>
-
-    <!-- Add asset code sequence -->
-    <record id="seq_facilities_asset" model="ir.sequence">
-        <field name="name">Asset Code</field>
-        <field name="code">facilities.asset</field>
-        <field name="prefix">AST</field>
-        <field name="padding">4</field>
-        <field name="company_id" eval="False"/>
-    </record>
 </odoo>
