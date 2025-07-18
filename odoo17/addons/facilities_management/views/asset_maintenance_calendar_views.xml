@@ -1,29 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Simplified maintenance calendar view -->
     <record id="view_maintenance_schedule_calendar" model="ir.ui.view">
         <field name="name">asset.maintenance.schedule.calendar</field>
         <field name="model">asset.maintenance.schedule</field>
         <field name="arch" type="xml">
-            <calendar date_start="next_maintenance_date"
-                      color="asset_id"
-                      string="Maintenance Calendar">
+            <calendar string="Maintenance Calendar"
+                      date_start="next_maintenance_date"
+                      color="maintenance_type">
                 <field name="name"/>
                 <field name="asset_id"/>
                 <field name="maintenance_type"/>
+                <field name="status"/>
+                <field name="last_maintenance_date"/>
+                <field name="interval_number"/>
+                <field name="interval_type"/>
+                <field name="job_plan_id"/>
+                <field name="active"/>
+                <field name="notes"/>
             </calendar>
         </field>
     </record>
 
-    <record id="action_maintenance_calendar" model="ir.actions.act_window">
-        <field name="name">Maintenance Calendar</field>
+    <!-- Maintenance Calendar with Last Maintenance Date -->
+    <record id="view_maintenance_schedule_calendar_last" model="ir.ui.view">
+        <field name="name">asset.maintenance.schedule.calendar.last</field>
+        <field name="model">asset.maintenance.schedule</field>
+        <field name="arch" type="xml">
+            <calendar string="Last Maintenance Calendar"
+                      date_start="last_maintenance_date"
+                      color="asset_id">
+                <field name="name"/>
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+                <field name="status"/>
+                <field name="next_maintenance_date"/>
+                <field name="notes"/>
+                <field name="interval_type"/>
+                <field name="interval_number"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Enhanced maintenance calendar action -->
+    <record id="action_maintenance_calendar_enhanced" model="ir.actions.act_window">
+        <field name="name">Enhanced Maintenance Calendar</field>
         <field name="res_model">asset.maintenance.schedule</field>
         <field name="view_mode">calendar,tree,form</field>
+        <field name="view_id" ref="view_maintenance_schedule_calendar"/>
+        <field name="context">{"search_default_active": 1, "search_default_upcoming": 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Plan your asset maintenance schedules
-            </p><p>
-                Organize and visualize maintenance tasks on a calendar.
+            </p>
+            <p>
+                Organize and visualize maintenance tasks on a calendar with enhanced features.
+                Color-coded by maintenance type for better organization.
             </p>
         </field>
     </record>
 
+    <!-- Maintenance History Calendar Action -->
+    <record id="action_maintenance_history_calendar" model="ir.actions.act_window">
+        <field name="name">Maintenance History Calendar</field>
+        <field name="res_model">asset.maintenance.schedule</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="view_id" ref="view_maintenance_schedule_calendar_last"/>
+        <field name="domain">[("last_maintenance_date", "!=", False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                View maintenance history
+            </p>
+            <p>
+                Track completed maintenance activities and analyze patterns.
+            </p>
+        </field>
+    </record>
 </odoo>

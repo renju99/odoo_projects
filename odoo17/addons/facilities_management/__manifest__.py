@@ -43,6 +43,7 @@
         'views/maintenance_job_plan_views.xml',
         'views/sla_views.xml',
         'views/asset_performance_views.xml',
+        'views/asset_calendar_views.xml',
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',
@@ -50,7 +51,7 @@
         'views/asset_dashboard_views.xml',
 
         # UI Menus
-        'views/facility_asset_menus.xml',
+            'views/facility_asset_menus.xml',
     ],
     'assets': {
         'web.assets_backend': [
