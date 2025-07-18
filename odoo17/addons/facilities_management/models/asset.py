@@ -146,7 +146,7 @@ class FacilityAsset(models.Model):
         ('good', 'Good (80-94%)'),
         ('average', 'Average (60-79%)'),
         ('poor', 'Poor (<60%)')
-    ], string='Current Performance Status', compute='_compute_performance_status')
+    ], string='Current Performance Status', compute='_compute_performance_status', store=True)
 
     # Computed Fields for Dashboard
     warranty_status = fields.Selection([
