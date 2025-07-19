@@ -5,44 +5,41 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <field name="status" widget="statusbar" nolabel="1" />
+                    <field name="status" widget="statusbar" nolabel="1"/>
                     <button name="action_start_progress" type="object" string="Start Progress"
-                            invisible="status != 'draft'" class="oe_highlight"/>
+                        invisible="status != 'draft'" class="oe_highlight"/>
                     <button name="action_complete" type="object" string="Mark as Completed"
-                            invisible="['|', ('status', '!=', 'in_progress'), ('all_tasks_completed', '=', False)]"
-                            class="oe_highlight"
-                            confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked.">
-                    </button>
+                        invisible="['|', ('status', '!=', 'in_progress'), ('all_tasks_completed', '=', False)]"
+                        class="oe_highlight"
+                        confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked."/>
                     <button name="action_cancel" type="object" string="Cancel"
-                            invisible="status in ('done', 'cancelled')"/>
+                        invisible="status in ('done', 'cancelled')"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
-                            invisible="status not in ('done', 'cancelled')"
-                            confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
+                        invisible="status not in ('done', 'cancelled')"
+                        confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button class="oe_stat_button" name="action_view_picking" type="object" icon="fa-truck"
-                                invisible="picking_count == 0">
-                                <field name="picking_count" widget="statinfo" string="Parts Transfers"/>
+                            invisible="picking_count == 0">
+                            <field name="picking_count" widget="statinfo" string="Parts Transfers"/>
                         </button>
                     </div>
-
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
                         <h1><field name="name" placeholder="Work Order Reference"/></h1>
                     </div>
-
                     <group>
                         <group string="Work Order Details">
                             <field name="asset_id" options="{'no_create': True}"/>
                             <field name="work_order_type"/>
                             <field name="schedule_id"
-                                   domain="[('active','=',True), ('asset_id','=',asset_id)]"
-                                   context="{'default_asset_id': asset_id}"/>
+                                domain="[('active','=',True), ('asset_id','=',asset_id)]"
+                                context="{'default_asset_id': asset_id}"/>
                             <field name="job_plan_id"
-                                   invisible="workorder_task_ids != False"
-                                   readonly="status != 'draft'"
-                                   help="Select a Job Plan to automatically populate tasks for this work order."/>
+                                invisible="workorder_task_ids != False"
+                                readonly="status != 'draft'"
+                                help="Select a Job Plan to automatically populate tasks for this work order."/>
                         </group>
                         <group string="Personnel &amp; Scheduled Dates">
                             <field name="technician_id"/>
@@ -50,97 +47,39 @@
                             <field name="end_date"/>
                         </group>
                     </group>
-
                     <group string="Actual Work Dates">
                         <field name="actual_start_date"/>
                         <field name="actual_end_date"/>
                     </group>
-
                     <notebook>
                         <page string="Description">
                             <field name="description"/>
                         </page>
-                        <!-- HIERARCHICAL SECTIONS AND TASKS PAGE -->
                         <page string="Sections &amp; Tasks">
-                            <field name="section_ids">
-                                <tree editable="bottom">
+                            <field name="section_ids" create="false" delete="false">
+                                <tree>
                                     <field name="sequence"/>
                                     <field name="name"/>
                                 </tree>
                                 <form>
                                     <group>
-                                        <field name="name"/>
-                                        <field name="sequence"/>
+                                        <field name="name" readonly="1"/>
+                                        <field name="sequence" readonly="1"/>
                                     </group>
                                     <field name="task_ids">
                                         <tree editable="bottom">
-                                            <field name="sequence"/>
-                                            <field name="name"/>
+                                            <field name="sequence" readonly="1"/>
+                                            <field name="name" readonly="1"/>
+                                            <field name="description" readonly="1"/>
+                                            <field name="is_checklist_item" readonly="1"/>
                                             <field name="is_done" widget="boolean_toggle"/>
-                                            <field name="description"/>
                                             <field name="before_image" widget="image"/>
                                             <field name="after_image" widget="image"/>
                                             <field name="notes"/>
                                         </tree>
-                                        <form>
-                                            <group>
-                                                <group>
-                                                    <field name="name"/>
-                                                    <field name="description"/>
-                                                    <field name="sequence"/>
-                                                    <field name="is_done"/>
-                                                    <field name="is_checklist_item"/>
-                                                </group>
-                                                <group string="Images">
-                                                    <field name="before_image" widget="image" filename="before_image_filename"/>
-                                                    <field name="after_image" widget="image" filename="after_image_filename"/>
-                                                </group>
-                                                <field name="notes"/>
-                                            </group>
-                                        </form>
                                     </field>
                                 </form>
                             </field>
-                        </page>
-                        <!-- You may keep the old Tasks/Checklist page below for legacy data: -->
-                        <page string="Tasks / Checklist" name="tasks_page">
-                            <field name="workorder_task_ids"
-                                   invisible="job_plan_id == False and workorder_task_ids == False"
-                                   readonly="status not in ('draft', 'in_progress')">
-                                <tree editable="bottom">
-                                    <field name="sequence" widget="handle"/>
-                                    <field name="name"/>
-                                    <field name="description" optional="hide"/>
-                                    <field name="before_image" widget="image" optional="hide"/>
-                                    <field name="after_image" widget="image" optional="hide"/>
-                                    <field name="is_done" widget="boolean_toggle"/>
-                                    <field name="notes"/>
-                                </tree>
-                                <form>
-                                    <group>
-                                        <group>
-                                            <field name="name"/>
-                                            <field name="description"/>
-                                        </group>
-                                        <group>
-                                            <field name="sequence"/>
-                                            <field name="is_done"/>
-                                            <field name="is_checklist_item"/>
-                                        </group>
-                                    </group>
-                                    <group string="Images">
-                                        <field name="before_image" widget="image" class="oe_avatar" filename="before_image_filename"/>
-                                        <field name="after_image" widget="image" class="oe_avatar" filename="after_image_filename"/>
-                                    </group>
-                                    <field name="notes"/>
-                                </form>
-                            </field>
-                            <p class="oe_grey" invisible="job_plan_id == False and workorder_task_ids == False">
-                                Note: Only tasks marked as 'Checklist Item' need to be completed to finish the Work Order.
-                            </p>
-                            <p class="oe_grey" invisible="job_plan_id != False or workorder_task_ids != False">
-                                Link a Job Plan or add tasks manually to create a detailed checklist for this work order.
-                            </p>
                         </page>
                         <page string="Work Done">
                             <field name="work_done"/>
@@ -172,6 +111,7 @@
                     <field name="activity_ids" widget="mail_activity"/>
                     <field name="message_ids" widget="mail_thread"/>
                 </div>
+                <field name="workorder_task_ids" invisible="1"/>
             </form>
         </field>
     </record>

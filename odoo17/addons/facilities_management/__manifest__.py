@@ -44,6 +44,7 @@
         'views/sla_views.xml',
         'views/asset_performance_views.xml',
         'views/asset_calendar_views.xml',
+        'views/test_workorder_task_views.xml',
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',
