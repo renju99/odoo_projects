@@ -1,0 +1,30 @@
+<odoo>
+    <record id="test_view_maintenance_workorder_task_tree" model="ir.ui.view">
+        <field name="name">maintenance.workorder.task.tree.test</field>
+        <field name="model">maintenance.workorder.task</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom">
+                <field name="workorder_id"/>
+                <field name="section_id"/>
+                <field name="name"/>
+                <field name="is_done" widget="boolean_toggle"/>
+                <field name="notes"/>
+                <field name="before_image" widget="image"/>
+                <field name="after_image" widget="image"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_test_workorder_task" model="ir.actions.act_window">
+        <field name="name">Test: Workorder Tasks</field>
+        <field name="res_model">maintenance.workorder.task</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="test_view_maintenance_workorder_task_tree"/>
+    </record>
+
+    <menuitem id="menu_test_workorder_task"
+              name="Test Workorder Tasks"
+              parent="base.menu_administration"
+              action="action_test_workorder_task"
+              sequence="1000"/>
+</odoo>
