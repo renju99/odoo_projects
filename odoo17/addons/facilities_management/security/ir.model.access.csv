@@ -22,3 +22,4 @@ access_maintenance_request_stage_user,maintenance.request.stage.user,model_maint
 access_facilities_asset_performance_user,facilities.asset.performance.user,model_facilities_asset_performance,base.group_user,1,1,1,1
 access_asset_downtime_reason_user,asset.downtime.reason.user,model_asset_downtime_reason,base.group_user,1,1,1,1
 access_maintenance_job_plan_section_user,maintenance.job.plan.section user,model_maintenance_job_plan_section,base.group_user,1,1,1,1
+access_maintenance_workorder_section_user,maintenance.workorder.section user,model_maintenance_workorder_section,base.group_user,1,1,1,1

@@ -22,6 +22,10 @@ class MaintenanceWorkOrder(models.Model):
     ], string='Type', default='corrective', required=True)
     technician_id = fields.Many2one('hr.employee', string='Primary Technician', domain="[('is_technician', '=', True)]")
     start_date = fields.Datetime(string='Scheduled Start Date')
+    section_ids = fields.One2many(
+        'maintenance.workorder.section', 'workorder_id',
+        string='Sections'
+    )
     end_date = fields.Datetime(string='Scheduled End Date')
     actual_start_date = fields.Datetime(string='Actual Start Date', readonly=True)
     actual_end_date = fields.Datetime(string='Actual End Date', readonly=True)

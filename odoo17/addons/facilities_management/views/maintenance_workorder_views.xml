@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_workorder_form" model="ir.ui.view">
         <field name="name">maintenance.workorder.form</field>
@@ -13,7 +12,7 @@
                             invisible="['|', ('status', '!=', 'in_progress'), ('all_tasks_completed', '=', False)]"
                             class="oe_highlight"
                             confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked.">
-                            </button>
+                    </button>
                     <button name="action_cancel" type="object" string="Cancel"
                             invisible="status in ('done', 'cancelled')"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
@@ -26,17 +25,6 @@
                                 invisible="picking_count == 0">
                                 <field name="picking_count" widget="statinfo" string="Parts Transfers"/>
                         </button>
-                        <!-- The commented-out button below was causing issues and should remain commented or be properly implemented -->
-                        <!--
-                        <button class="oe_stat_button" name="null" type="object" icon="fa-tasks">
-                            <div class="o_field_widget o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="all_tasks_completed" widget="boolean_toggle" nolabel="1"/>
-                                </span>
-                                <span class="o_stat_text">All Tasks Done</span>
-                            </div>
-                        </button>
-                        -->
                     </div>
 
                     <div class="oe_title">
@@ -72,6 +60,49 @@
                         <page string="Description">
                             <field name="description"/>
                         </page>
+                        <!-- HIERARCHICAL SECTIONS AND TASKS PAGE -->
+                        <page string="Sections &amp; Tasks">
+                            <field name="section_ids">
+                                <tree editable="bottom">
+                                    <field name="sequence"/>
+                                    <field name="name"/>
+                                </tree>
+                                <form>
+                                    <group>
+                                        <field name="name"/>
+                                        <field name="sequence"/>
+                                    </group>
+                                    <field name="task_ids">
+                                        <tree editable="bottom">
+                                            <field name="sequence"/>
+                                            <field name="name"/>
+                                            <field name="is_done" widget="boolean_toggle"/>
+                                            <field name="description"/>
+                                            <field name="before_image" widget="image"/>
+                                            <field name="after_image" widget="image"/>
+                                            <field name="notes"/>
+                                        </tree>
+                                        <form>
+                                            <group>
+                                                <group>
+                                                    <field name="name"/>
+                                                    <field name="description"/>
+                                                    <field name="sequence"/>
+                                                    <field name="is_done"/>
+                                                    <field name="is_checklist_item"/>
+                                                </group>
+                                                <group string="Images">
+                                                    <field name="before_image" widget="image" filename="before_image_filename"/>
+                                                    <field name="after_image" widget="image" filename="after_image_filename"/>
+                                                </group>
+                                                <field name="notes"/>
+                                            </group>
+                                        </form>
+                                    </field>
+                                </form>
+                            </field>
+                        </page>
+                        <!-- You may keep the old Tasks/Checklist page below for legacy data: -->
                         <page string="Tasks / Checklist" name="tasks_page">
                             <field name="workorder_task_ids"
                                    invisible="job_plan_id == False and workorder_task_ids == False"
@@ -80,11 +111,10 @@
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
                                     <field name="description" optional="hide"/>
-                                     <field name="before_image" widget="image" optional="hide"/>
-                                     <field name="after_image" widget="image" optional="hide"/>
+                                    <field name="before_image" widget="image" optional="hide"/>
+                                    <field name="after_image" widget="image" optional="hide"/>
                                     <field name="is_done" widget="boolean_toggle"/>
                                     <field name="notes"/>
-
                                 </tree>
                                 <form>
                                     <group>
@@ -96,8 +126,6 @@
                                             <field name="sequence"/>
                                             <field name="is_done"/>
                                             <field name="is_checklist_item"/>
-                                            <!-- REMOVED: frequency_type from workorder_task form view -->
-                                            <!-- <field name="frequency_type"/> -->
                                         </group>
                                     </group>
                                     <group string="Images">
@@ -147,5 +175,4 @@
             </form>
         </field>
     </record>
-
 </odoo>
