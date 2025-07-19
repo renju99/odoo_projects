@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # /home/ranjith/odoo_projects/odoo17/addons/facilities_management/models/maintenance_workorder_task.py
 
-from odoo import fields, models, api
-from odoo.exceptions import ValidationError # Ensure ValidationError is imported
+from odoo import fields, models, api, _
+from odoo.exceptions import ValidationError  # Ensure ValidationError is imported
 
 class MaintenanceWorkorderTask(models.Model):
     _name = 'maintenance.workorder.task'
@@ -16,13 +16,24 @@ class MaintenanceWorkorderTask(models.Model):
     description = fields.Text(string='Instructions')
     notes = fields.Text(string='Technician Notes', help="Notes added by the technician during execution.")
     is_checklist_item = fields.Boolean(string='Checklist Item', default=True,
-                                        help="If checked, this task is part of the work order's completion checklist.")
+                                       help="If checked, this task is part of the work order's completion checklist.")
 
     # NEW FIELDS FOR IMAGES - These are correctly defined here
     before_image = fields.Binary(string="Before Image", attachment=True, help="Image of the asset/area before task execution.")
     before_image_filename = fields.Char(string="Before Image Filename")
     after_image = fields.Binary(string="After Image", attachment=True, help="Image of the asset/area after task execution.")
     after_image_filename = fields.Char(string="After Image Filename")
+
+    frequency_type = fields.Selection(
+        [
+            ('daily', 'Daily'),
+            ('weekly', 'Weekly'),
+            ('monthly', 'Monthly'),
+            ('yearly', 'Yearly'),
+        ],
+        string='Frequency Type',
+        help="How often this task should be performed.",
+    )
 
     # Constraint to ensure 'is_done' can only be changed when WO is in_progress
     @api.constrains('is_done')

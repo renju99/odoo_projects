@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Tree View for Maintenance Job Plan -->
-    <record id="maintenance_job_plan_view_tree" model="ir.ui.view">
-        <field name="name">maintenance.job.plan.tree</field>
-        <field name="model">maintenance.job.plan</field>
-        <field name="arch" type="xml">
-            <tree string="Maintenance Job Plans">
-                <field name="name"/>
-                <field name="code"/>
-                <field name="asset_category_ids" widget="many2many_tags"/>
-                <field name="company_id" groups="base.group_multi_company"/>
-                <field name="active" widget="boolean_toggle"/>
-            </tree>
-        </field>
-    </record>
-
-    <!-- Form View for Maintenance Job Plan -->
+    <!-- Maintenance Job Plan Form View -->
     <record id="maintenance_job_plan_view_form" model="ir.ui.view">
         <field name="name">maintenance.job.plan.form</field>
         <field name="model">maintenance.job.plan</field>
@@ -38,8 +23,6 @@
                         <group>
                             <field name="asset_category_ids" widget="many2many_tags"
                                    options="{'no_create_edit': True}"/>
-                            <!-- If you want to add 'asset_ids' field from maintenance.job.plan, uncomment below -->
-                            <!-- <field name="asset_ids" widget="many2many_tags" domain="[('category_id', 'in', asset_category_ids)]"/> -->
                         </group>
                         <group>
                             <field name="company_id" groups="base.group_multi_company"/>
@@ -47,25 +30,35 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Tasks" name="tasks">
-                            <field name="task_ids">
-                                <tree editable="bottom">
+                        <page string="Sections &amp; Tasks" name="sections_tasks">
+                            <!-- Section list (not editable inline, so arrow appears) -->
+                            <field name="section_ids">
+                                <tree>
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
-                                    <field name="description"/>
-                                    <field name="is_checklist_item"/>
                                 </tree>
+                                <!-- Section form: tasks are editable inline here -->
                                 <form>
                                     <group>
-                                        <group>
+                                        <field name="name"/>
+                                        <field name="sequence"/>
+                                    </group>
+                                    <field name="task_ids">
+                                        <tree editable="bottom">
+                                            <field name="sequence" widget="handle"/>
                                             <field name="name"/>
                                             <field name="description"/>
-                                        </group>
-                                        <group>
-                                            <field name="sequence"/>
                                             <field name="is_checklist_item"/>
-                                        </group>
-                                    </group>
+                                        </tree>
+                                        <form>
+                                            <group>
+                                                <field name="name"/>
+                                                <field name="description"/>
+                                                <field name="sequence"/>
+                                                <field name="is_checklist_item"/>
+                                            </group>
+                                        </form>
+                                    </field>
                                 </form>
                             </field>
                         </page>
@@ -86,25 +79,4 @@
             </form>
         </field>
     </record>
-
-    <record id="action_maintenance_job_plan" model="ir.actions.act_window">
-        <field name="name">Maintenance Job Plans</field>
-        <field name="res_model">maintenance.job.plan</field>
-        <field name="view_mode">tree,form</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create a new Maintenance Job Plan
-            </p><p>
-                Job Plans define the detailed steps and procedures for different maintenance tasks.
-                You can link these plans to your maintenance schedules.
-            </p>
-        </field>
-    </record>
-
-    <menuitem id="menu_maintenance_job_plans"
-              name="Job Plans"
-              parent="facilities_management.menu_maintenance"
-              action="action_maintenance_job_plan"
-              sequence="20"/>
-
 </odoo>

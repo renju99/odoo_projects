@@ -35,6 +35,9 @@ from . import maintenance_workorder
 from . import maintenance_workorder_assignment
 from . import maintenance_workorder_part_line
 from . import maintenance_workorder_task
+from . import maintenance_job_plan_section
+from . import maintenance_job_plan_task
+from . import maintenance_job_plan
 from . import stock_picking
 
 # 5. Scheduled/Predictive Maintenance (Often depend on assets and work orders)
