@@ -32,7 +32,12 @@
                     <group>
                         <group string="Work Order Details">
                             <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="facility_id" readonly="1"/>
+                            <field name="room_id" readonly="1"/>
+                            <field name="building_id" readonly="1"/>
+                            <field name="floor_id" readonly="1"/>
                             <field name="work_order_type"/>
+                            <field name="priority"/>
                             <field name="schedule_id"
                                 domain="[('active','=',True), ('asset_id','=',asset_id)]"
                                 context="{'default_asset_id': asset_id}"/>
@@ -53,6 +58,14 @@
                     <group string="Actual Work Dates">
                         <field name="actual_start_date"/>
                         <field name="actual_end_date"/>
+                    </group>
+                    <!-- SLA Information -->
+                    <group string="SLA Information" colspan="2">
+                        <field name="sla_id"/>
+                        <field name="sla_response_deadline" readonly="1"/>
+                        <field name="sla_resolution_deadline" readonly="1"/>
+                        <field name="sla_response_status" widget="badge"/>
+                        <field name="sla_resolution_status" widget="badge"/>
                     </group>
                     <notebook>
                         <page string="Description">
@@ -127,9 +140,17 @@
                 <field name="name"/>
                 <field name="status" widget="statusbar"/>
                 <field name="asset_id"/>
+                <field name="facility_id"/>
+                <field name="room_id"/>
+                <field name="building_id"/>
+                <field name="floor_id"/>
+                <field name="priority"/>
                 <field name="service_type"/>
                 <field name="maintenance_team_id"/>
                 <field name="technician_id"/>
+                <field name="sla_id"/>
+                <field name="sla_response_status" widget="badge"/>
+                <field name="sla_resolution_status" widget="badge"/>
                 <button name="action_start_progress" string="Start Work" type="object" icon="fa-play"/>
                 <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
                 <button name="action_report_downtime" string="Report Downtime" type="object" icon="fa-clock-o"/>

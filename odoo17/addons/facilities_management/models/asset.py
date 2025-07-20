@@ -58,7 +58,31 @@ class FacilityAsset(models.Model):
         string='Condition',
         tracking=True
     )
-    location = fields.Char('Location', tracking=True)
+    # location = fields.Char('Location', tracking=True)  # REMOVED
+
+    # Location Hierarchy Fields
+    room_id = fields.Many2one(
+        'facilities.room', string='Room',
+        tracking=True
+    )
+    building_id = fields.Many2one(
+        'facilities.building', string='Building',
+        compute='_compute_building_floor',
+        store=True,
+        readonly=False # allow override if needed
+    )
+    floor_id = fields.Many2one(
+        'facilities.floor', string='Floor',
+        compute='_compute_building_floor',
+        store=True,
+        readonly=False # allow override if needed
+    )
+
+    @api.depends('room_id')
+    def _compute_building_floor(self):
+        for asset in self:
+            asset.building_id = asset.room_id.building_id if asset.room_id and asset.room_id.building_id else False
+            asset.floor_id = asset.room_id.floor_id if asset.room_id and asset.room_id.floor_id else False
 
     # People & Organization
     responsible_id = fields.Many2one('res.users', string='Responsible Person', tracking=True)

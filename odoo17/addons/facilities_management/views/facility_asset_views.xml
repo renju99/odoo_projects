@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Asset Tree View (no QR code image) -->
+    <!-- Asset Tree View (location removed, room/building/floor added) -->
     <record id="view_facilities_asset_tree" model="ir.ui.view">
         <field name="name">facilities.asset.tree</field>
         <field name="model">facilities.asset</field>
@@ -11,7 +11,9 @@
                 <field name="barcode"/>
                 <field name="facility_id"/>
                 <field name="category_id"/>
-                <field name="location"/>
+                <field name="room_id"/>
+                <field name="building_id"/>
+                <field name="floor_id"/>
                 <field name="condition"/>
                 <field name="responsible_id"/>
                 <field name="active"/>
@@ -19,7 +21,7 @@
         </field>
     </record>
 
-    <!-- Asset Form View (button removed from header) -->
+    <!-- Asset Form View (location removed, room+building+floor added, building/floor auto-populated and readonly) -->
     <record id="view_facility_asset_form" model="ir.ui.view">
         <field name="name">facilities.asset.form</field>
         <field name="model">facilities.asset</field>
@@ -55,7 +57,9 @@
                         </group>
                         <group string="Location &amp; Responsibility">
                             <field name="facility_id"/>
-                            <field name="location"/>
+                            <field name="room_id"/>
+                            <field name="building_id" readonly="1"/>
+                            <field name="floor_id" readonly="1"/>
                             <field name="responsible_id"/>
                             <field name="department_id"/>
                         </group>
@@ -131,7 +135,7 @@
         </field>
     </record>
 
-    <!-- Asset Search View -->
+    <!-- Asset Search View (location removed, room/building/floor added) -->
     <record id="view_facilities_asset_search" model="ir.ui.view">
         <field name="name">facilities.asset.search</field>
         <field name="model">facilities.asset</field>
@@ -144,7 +148,9 @@
                 <field name="asset_tag"/>
                 <field name="category_id"/>
                 <field name="facility_id"/>
-                <field name="location"/>
+                <field name="room_id"/>
+                <field name="building_id"/>
+                <field name="floor_id"/>
                 <field name="responsible_id"/>
                 <field name="manufacturer_id"/>
                 <field name="model_number"/>
@@ -153,6 +159,9 @@
                 <group expand="0" string="Group By">
                     <filter string="Category" name="groupby_category" context="{'group_by':'category_id'}"/>
                     <filter string="Project" name="groupby_project" context="{'group_by':'facility_id'}"/>
+                    <filter string="Room" name="groupby_room" context="{'group_by':'room_id'}"/>
+                    <filter string="Building" name="groupby_building" context="{'group_by':'building_id'}"/>
+                    <filter string="Floor" name="groupby_floor" context="{'group_by':'floor_id'}"/>
                     <filter string="Condition" name="groupby_condition" context="{'group_by':'condition'}"/>
                     <filter string="Responsible Person" name="groupby_responsible" context="{'group_by':'responsible_id'}"/>
                     <filter string="Manufacturer" name="groupby_manufacturer" context="{'group_by':'manufacturer_id'}"/>
@@ -167,45 +176,26 @@
     <record id="action_facilities_asset" model="ir.actions.act_window">
         <field name="name">Facility Assets</field>
         <field name="res_model">facilities.asset</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,calendar</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first facility asset!
+            </p>
+            <p>
+                Manage your facility assets including equipment, furniture, and infrastructure.
+                Use calendar view to track important dates like warranty expiration.
+            </p>
+        </field>
     </record>
 
     <!-- Asset Dashboard Action -->
     <record id="action_asset_dashboard" model="ir.actions.act_window">
         <field name="name">Asset Dashboard</field>
         <field name="res_model">facilities.asset</field>
-        <field name="view_mode">graph,pivot</field>
+        <field name="view_mode">graph,pivot,calendar</field>
         <field name="domain">[]</field>
         <field name="context">{}</field>
         <field name="target">current</field>
         <field name="binding_model_id" eval="False"/>
     </record>
-
-    <!-- Update existing action to include calendar view -->
-<record id="action_facilities_asset" model="ir.actions.act_window">
-    <field name="name">Facility Assets</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">tree,form,calendar</field>
-    <field name="help" type="html">
-        <p class="o_view_nocontent_smiling_face">
-            Create your first facility asset!
-        </p>
-        <p>
-            Manage your facility assets including equipment, furniture, and infrastructure.
-            Use calendar view to track important dates like warranty expiration.
-        </p>
-    </field>
-</record>
-
-<!-- Update existing asset dashboard action -->
-<record id="action_asset_dashboard" model="ir.actions.act_window">
-    <field name="name">Asset Dashboard</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">graph,pivot,calendar</field>
-    <field name="domain">[]</field>
-    <field name="context">{}</field>
-    <field name="target">current</field>
-    <field name="binding_model_id" eval="False"/>
-</record>
-
 </odoo>

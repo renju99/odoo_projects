@@ -1,8 +1,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
+from datetime import timedelta
 
 _logger = logging.getLogger(__name__)
+
 
 class MaintenanceWorkOrder(models.Model):
     _name = 'maintenance.workorder'
@@ -17,8 +19,37 @@ class MaintenanceWorkOrder(models.Model):
         ('hse', 'HSE Incident')
     ]
 
-    name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True, default=lambda self: _('New'))
+    name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True,
+                       default=lambda self: _('New'))
     asset_id = fields.Many2one('facilities.asset', string='Asset', required=True)
+    facility_id = fields.Many2one(
+        'facilities.facility',
+        string='Facility',
+        related='asset_id.facility_id',
+        store=True,
+        readonly=True,
+    )
+    room_id = fields.Many2one(
+        'facilities.room',
+        string='Room',
+        related='asset_id.room_id',
+        store=True,
+        readonly=True,
+    )
+    building_id = fields.Many2one(
+        'facilities.building',
+        string='Building',
+        related='asset_id.building_id',
+        store=True,
+        readonly=True,
+    )
+    floor_id = fields.Many2one(
+        'facilities.floor',
+        string='Floor',
+        related='asset_id.floor_id',
+        store=True,
+        readonly=True,
+    )
     schedule_id = fields.Many2one('asset.maintenance.schedule', string='Maintenance Schedule')
     work_order_type = fields.Selection([
         ('preventive', 'Preventive'),
@@ -51,7 +82,8 @@ class MaintenanceWorkOrder(models.Model):
     picking_id = fields.Many2one('stock.picking', string='Parts Transfer', copy=False,
                                  help="The internal transfer for parts issued for this work order.")
     picking_count = fields.Integer(compute='_compute_picking_count', string='Transfers')
-    has_parts = fields.Boolean(compute='_compute_has_parts', store=True, help="Indicates if this work order has parts lines.")
+    has_parts = fields.Boolean(compute='_compute_has_parts', store=True,
+                               help="Indicates if this work order has parts lines.")
 
     # --- ADDED FIELDS ---
     service_type = fields.Selection(
@@ -80,6 +112,23 @@ class MaintenanceWorkOrder(models.Model):
 
     job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan',
                                   help="The job plan linked to this work order, providing detailed tasks.")
+
+    # --- SLA Fields ---
+    sla_id = fields.Many2one('maintenance.workorder.sla', string='Applied SLA', readonly=True)
+    sla_response_deadline = fields.Datetime(string='Response Deadline', readonly=True)
+    sla_resolution_deadline = fields.Datetime(string='Resolution Deadline', readonly=True)
+    sla_response_status = fields.Selection([
+        ('on_time', 'On Time'),
+        ('warning', 'Warning'),
+        ('critical', 'Critical'),
+        ('breached', 'Breached')
+    ], string='Response SLA Status', compute='_compute_sla_status', store=True)
+    sla_resolution_status = fields.Selection([
+        ('on_time', 'On Time'),
+        ('warning', 'Warning'),
+        ('critical', 'Critical'),
+        ('breached', 'Breached')
+    ], string='Resolution SLA Status', compute='_compute_sla_status', store=True)
 
     @api.depends('section_ids.task_ids.is_done', 'workorder_task_ids.is_done')
     def _compute_all_tasks_completed(self):
@@ -111,7 +160,72 @@ class MaintenanceWorkOrder(models.Model):
         for rec in records:
             if rec.job_plan_id:
                 rec._copy_job_plan_sections_and_tasks()
+            rec._apply_sla()
         return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if any(field in vals for field in ['priority', 'asset_id', 'work_order_type']):
+            for rec in self:
+                rec._apply_sla()
+        return result
+
+    def _apply_sla(self):
+        try:
+            sla = self.env['maintenance.workorder.sla'].find_matching_sla(self)
+            if sla:
+                current_time = fields.Datetime.now()
+                self.write({
+                    'sla_id': sla.id,
+                    'sla_response_deadline': current_time + timedelta(hours=sla.response_time_hours),
+                    'sla_resolution_deadline': current_time + timedelta(hours=sla.resolution_time_hours),
+                })
+        except Exception:
+            pass
+
+    @api.depends('sla_response_deadline', 'sla_resolution_deadline', 'actual_start_date', 'actual_end_date', 'status')
+    def _compute_sla_status(self):
+        for record in self:
+            if not record.sla_response_deadline:
+                record.sla_response_status = 'on_time'
+                record.sla_resolution_status = 'on_time'
+                continue
+
+            current_time = fields.Datetime.now()
+
+            # Response SLA Status
+            if record.actual_start_date:
+                record.sla_response_status = 'on_time'
+            else:
+                time_remaining = (record.sla_response_deadline - current_time).total_seconds()
+                total_time = (record.sla_response_deadline - record.create_date).total_seconds()
+                percentage_used = ((total_time - time_remaining) / total_time) * 100 if total_time > 0 else 0
+
+                if time_remaining <= 0:
+                    record.sla_response_status = 'breached'
+                elif percentage_used >= (record.sla_id.critical_threshold if record.sla_id else 95):
+                    record.sla_response_status = 'critical'
+                elif percentage_used >= (record.sla_id.warning_threshold if record.sla_id else 80):
+                    record.sla_response_status = 'warning'
+                else:
+                    record.sla_response_status = 'on_time'
+
+            # Resolution SLA Status
+            if record.status == 'done':
+                record.sla_resolution_status = 'on_time'
+            else:
+                time_remaining = (record.sla_resolution_deadline - current_time).total_seconds()
+                total_time = (record.sla_resolution_deadline - record.create_date).total_seconds()
+                percentage_used = ((total_time - time_remaining) / total_time) * 100 if total_time > 0 else 0
+
+                if time_remaining <= 0:
+                    record.sla_resolution_status = 'breached'
+                elif percentage_used >= (record.sla_id.critical_threshold if record.sla_id else 95):
+                    record.sla_resolution_status = 'critical'
+                elif percentage_used >= (record.sla_id.warning_threshold if record.sla_id else 80):
+                    record.sla_resolution_status = 'warning'
+                else:
+                    record.sla_resolution_status = 'on_time'
 
     def _copy_job_plan_sections_and_tasks(self):
         """Copy sections & tasks from job plan to work order."""
@@ -193,25 +307,6 @@ class MaintenanceWorkOrder(models.Model):
         }
 
     def action_assign_technician(self):
-        for rec in self:
-            # open wizard (recommended) or assign current user as technician for demo
-            if not rec.technician_id:
-                rec.technician_id = self.env.user.employee_id.id
-            else:
-                raise UserError(_("Technician already assigned. Use form view to change."))
-
-    def action_report_downtime(self):
-        for rec in self:
-            # Open downtime wizard or show notification (demo)
-            return {
-                'type': 'ir.actions.act_window',
-                'name': _('Report Downtime'),
-                'res_model': 'asset.downtime.reason',
-                'view_mode': 'tree,form',
-                'target': 'new',
-                'context': {'default_asset_id': rec.asset_id.id}
-            }
-    def action_assign_technician(self):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Assign Technician',
@@ -220,3 +315,14 @@ class MaintenanceWorkOrder(models.Model):
             'target': 'new',
             'context': {'default_workorder_id': self.id}
         }
+
+    def action_report_downtime(self):
+        for rec in self:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Report Downtime'),
+                'res_model': 'asset.downtime.reason',
+                'view_mode': 'tree,form',
+                'target': 'new',
+                'context': {'default_asset_id': rec.asset_id.id}
+            }

@@ -1,9 +1,7 @@
 from odoo import models, fields, api, _
-from datetime import timedelta
 from odoo.exceptions import ValidationError
 
-
-class WorkOrderSLA(models.Model):
+class MaintenanceWorkOrderSLA(models.Model):
     _name = 'maintenance.workorder.sla'
     _description = 'Work Order SLA Configuration'
     _rec_name = 'name'
@@ -11,6 +9,7 @@ class WorkOrderSLA(models.Model):
 
     name = fields.Char(string='SLA Name', required=True)
     active = fields.Boolean(default=True)
+    sequence = fields.Integer(string='Sequence', default=10, help="Lower sequence = higher priority for matching")
 
     # SLA Criteria
     priority = fields.Selection([
@@ -20,8 +19,7 @@ class WorkOrderSLA(models.Model):
         ('3', 'High'),
     ], string='Priority', help="Leave empty to apply to all priorities")
 
-    facility_id = fields.Many2one('facilities.facility', string='Project/Facility',
-                                  help="Leave empty to apply to all facilities")
+    facility_id = fields.Many2one('facilities.facility', string='Facility', help="Leave empty to apply to all facilities")
     location = fields.Char(string='Location', help="Leave empty to apply to all locations")
     work_order_type = fields.Selection([
         ('preventive', 'Preventive'),
@@ -30,37 +28,33 @@ class WorkOrderSLA(models.Model):
         ('inspection', 'Inspection'),
     ], string='Work Order Type', help="Leave empty to apply to all types")
 
-    # SLA Targets (in hours)
-    response_time_hours = fields.Float(string='Response Time (Hours)', required=True, default=4.0,
-                                       help="Time to acknowledge/start work")
-    resolution_time_hours = fields.Float(string='Resolution Time (Hours)', required=True, default=24.0,
-                                         help="Time to complete work")
+    response_time_hours = fields.Float(string='Response Time (Hours)', required=True, default=4.0, help="Time to acknowledge/start work")
+    resolution_time_hours = fields.Float(string='Resolution Time (Hours)', required=True, default=24.0, help="Time to complete work")
 
-    # SLA Thresholds
-    warning_threshold = fields.Float(string='Warning Threshold (%)', default=80.0,
-                                     help="Send warning when SLA reaches this percentage")
-    critical_threshold = fields.Float(string='Critical Threshold (%)', default=95.0,
-                                      help="Send critical alert when SLA reaches this percentage")
+    warning_threshold = fields.Float(string='Warning Threshold (%)', default=80.0, help="Send warning when SLA reaches this percentage")
+    critical_threshold = fields.Float(string='Critical Threshold (%)', default=95.0, help="Send critical alert when SLA reaches this percentage")
 
-    # Resource Utilization Targets
-    target_utilization_percentage = fields.Float(string='Target Utilization (%)', default=80.0)
-    max_concurrent_workorders = fields.Integer(string='Max Concurrent Work Orders', default=5)
-
-    # Escalation
     escalation_enabled = fields.Boolean(string='Enable Escalation', default=True)
-    escalation_manager_id = fields.Many2one('hr.employee', string='Escalation Manager',
-                                            domain="[('user_id', '!=', False)]")
-
-    sequence = fields.Integer(string='Sequence', default=10,
-                              help="Lower sequence = higher priority for matching")
+    escalation_manager_id = fields.Many2one('hr.employee', string='Escalation Manager', domain="[('user_id', '!=', False)]")
 
     @api.model
     def find_matching_sla(self, workorder):
-        """Find the most specific SLA configuration for a work order"""
+        """
+        Find the most specific, active SLA configuration for a work order.
+        Uses a weighted score: priority (4), facility (3), location (2), type (1).
+        """
         domain = [('active', '=', True)]
-
-        # Find all potential SLAs and score them by specificity
         all_slas = self.search(domain, order='sequence asc')
+
+        # Attempt to get facility and location via asset, fallback to direct field
+        facility_id = getattr(workorder.asset_id, 'facility_id', None)
+        if facility_id:
+            facility_id = facility_id.id
+        else:
+            facility_id = getattr(workorder, 'facility_id', False)
+            facility_id = facility_id.id if facility_id else False
+
+        location = getattr(workorder.asset_id, 'location', None) or getattr(workorder, 'location', None)
 
         best_sla = None
         best_score = -1
@@ -69,25 +63,30 @@ class WorkOrderSLA(models.Model):
             score = 0
             matches = True
 
-            # Check if this SLA matches the workorder criteria
+            # Priority
             if sla.priority and sla.priority != workorder.priority:
                 matches = False
-            elif sla.priority == workorder.priority:
+            elif sla.priority and sla.priority == workorder.priority:
                 score += 4
 
-            if sla.facility_id and workorder.asset_id.facility_id and sla.facility_id.id != workorder.asset_id.facility_id.id:
+            # Facility
+            if sla.facility_id and facility_id and sla.facility_id.id != facility_id:
                 matches = False
-            elif sla.facility_id and workorder.asset_id.facility_id and sla.facility_id.id == workorder.asset_id.facility_id.id:
+            elif sla.facility_id and facility_id and sla.facility_id.id == facility_id:
                 score += 3
 
-            if sla.location and workorder.asset_id.location and sla.location != workorder.asset_id.location:
+            # Location
+            sla_loc = sla.location.lower().strip() if sla.location else ""
+            wo_loc = (location or "").lower().strip()
+            if sla.location and wo_loc and sla_loc != wo_loc:
                 matches = False
-            elif sla.location and workorder.asset_id.location and sla.location == workorder.asset_id.location:
+            elif sla.location and wo_loc and sla_loc == wo_loc:
                 score += 2
 
+            # WO Type
             if sla.work_order_type and sla.work_order_type != workorder.work_order_type:
                 matches = False
-            elif sla.work_order_type == workorder.work_order_type:
+            elif sla.work_order_type and sla.work_order_type == workorder.work_order_type:
                 score += 1
 
             if matches and score > best_score:

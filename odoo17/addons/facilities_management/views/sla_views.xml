@@ -1,19 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- SLA Configuration Views -->
+    <!-- SLA Configuration: Tree View -->
     <record id="view_maintenance_workorder_sla_tree" model="ir.ui.view">
         <field name="name">maintenance.workorder.sla.tree</field>
         <field name="model">maintenance.workorder.sla</field>
         <field name="arch" type="xml">
             <tree>
+                <field name="sequence"/>
                 <field name="name"/>
                 <field name="priority"/>
+                <field name="facility_id"/>
+                <field name="location"/>
+                <field name="work_order_type"/>
                 <field name="response_time_hours"/>
                 <field name="resolution_time_hours"/>
+                <field name="warning_threshold"/>
+                <field name="critical_threshold"/>
+                <field name="active"/>
             </tree>
         </field>
     </record>
 
+    <!-- SLA Configuration: Form View -->
     <record id="view_maintenance_workorder_sla_form" model="ir.ui.view">
         <field name="name">maintenance.workorder.sla.form</field>
         <field name="model">maintenance.workorder.sla</field>
@@ -21,21 +29,32 @@
             <form>
                 <sheet>
                     <group>
-                        <group>
-                            <field name="name"/>
-                            <field name="priority"/>
-                        </group>
-                        <group>
-                            <field name="response_time_hours"/>
-                            <field name="resolution_time_hours"/>
-                        </group>
+                        <field name="active"/>
+                        <field name="sequence"/>
+                        <field name="name"/>
+                    </group>
+                    <group string="SLA Criteria">
+                        <field name="priority"/>
+                        <field name="facility_id"/>
+                        <field name="location"/>
+                        <field name="work_order_type"/>
+                    </group>
+                    <group string="SLA Targets">
+                        <field name="response_time_hours"/>
+                        <field name="resolution_time_hours"/>
+                    </group>
+                    <group string="Thresholds &amp; Escalation">
+                        <field name="warning_threshold"/>
+                        <field name="critical_threshold"/>
+                        <field name="escalation_enabled"/>
+                        <field name="escalation_manager_id"/>
                     </group>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- SLA Analytics Views -->
+    <!-- SLA Analytics Views (unchanged, for reference) -->
     <record id="view_maintenance_sla_analytics_tree" model="ir.ui.view">
         <field name="name">maintenance.sla.analytics.tree</field>
         <field name="model">maintenance.sla.analytics</field>
@@ -77,5 +96,4 @@
               parent="facilities_management.menu_maintenance"
               action="action_maintenance_sla_analytics"
               sequence="65"/>
-
 </odoo>
