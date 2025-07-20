@@ -37,6 +37,7 @@
         'views/asset_maintenance_schedule_views.xml',
         'views/asset_maintenance_calendar_views.xml',
         'views/maintenance_workorder_views.xml',
+        'views/maintenance_workorder_kanban.xml',
         'views/asset_maintenance_scheduled_actions.xml',
         'views/maintenance_workorder_part_line_views.xml',
         'views/product_views.xml',
@@ -44,7 +45,7 @@
         'views/sla_views.xml',
         'views/asset_performance_views.xml',
         'views/asset_calendar_views.xml',
-        'views/test_workorder_task_views.xml',
+        'views/assign_technician_wizard_view.xml',
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',

@@ -170,3 +170,32 @@ class MaintenanceWorkOrder(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def action_assign_technician(self):
+        for rec in self:
+            # open wizard (recommended) or assign current user as technician for demo
+            if not rec.technician_id:
+                rec.technician_id = self.env.user.employee_id.id
+            else:
+                raise UserError(_("Technician already assigned. Use form view to change."))
+
+    def action_report_downtime(self):
+        for rec in self:
+            # Open downtime wizard or show notification (demo)
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Report Downtime'),
+                'res_model': 'asset.downtime.reason',
+                'view_mode': 'tree,form',
+                'target': 'new',
+                'context': {'default_asset_id': rec.asset_id.id}
+            }
+    def action_assign_technician(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Assign Technician',
+            'res_model': 'assign.technician.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_workorder_id': self.id}
+        }

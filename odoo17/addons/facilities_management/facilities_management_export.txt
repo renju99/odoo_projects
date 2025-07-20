@@ -38,6 +38,7 @@
         'views/asset_maintenance_schedule_views.xml',
         'views/asset_maintenance_calendar_views.xml',
         'views/maintenance_workorder_views.xml',
+        'views/maintenance_workorder_kanban.xml',
         'views/asset_maintenance_scheduled_actions.xml',
         'views/maintenance_workorder_part_line_views.xml',
         'views/product_views.xml',
@@ -45,6 +46,7 @@
         'views/sla_views.xml',
         'views/asset_performance_views.xml',
         'views/asset_calendar_views.xml',
+        'views/assign_technician_wizard_view.xml',
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',
@@ -77,6 +79,7 @@
 
 --- File: __init__.py ---
 from . import models
+from . import wizard
 
 --- File: export_script.py ---
 import os
@@ -2423,6 +2426,35 @@ class MaintenanceWorkOrder(models.Model):
             'target': 'current',
         }
 
+    def action_assign_technician(self):
+        for rec in self:
+            # open wizard (recommended) or assign current user as technician for demo
+            if not rec.technician_id:
+                rec.technician_id = self.env.user.employee_id.id
+            else:
+                raise UserError(_("Technician already assigned. Use form view to change."))
+
+    def action_report_downtime(self):
+        for rec in self:
+            # Open downtime wizard or show notification (demo)
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Report Downtime'),
+                'res_model': 'asset.downtime.reason',
+                'view_mode': 'tree,form',
+                'target': 'new',
+                'context': {'default_asset_id': rec.asset_id.id}
+            }
+    def action_assign_technician(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Assign Technician',
+            'res_model': 'assign.technician.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_workorder_id': self.id}
+        }
+
 --- File: models/product.py ---
 # -*- coding: utf-8 -*-
 from odoo import models, fields
@@ -2703,6 +2735,7 @@ access_facilities_asset_performance_user,facilities.asset.performance.user,model
 access_asset_downtime_reason_user,asset.downtime.reason.user,model_asset_downtime_reason,base.group_user,1,1,1,1
 access_maintenance_job_plan_section_user,maintenance.job.plan.section user,model_maintenance_job_plan_section,base.group_user,1,1,1,1
 access_maintenance_workorder_section_user,maintenance.workorder.section user,model_maintenance_workorder_section,base.group_user,1,1,1,1
+access_assign_technician_wizard_user,assign.technician.wizard.user,model_assign_technician_wizard,base.group_user,1,1,1,1
 
 --- File: security/facility_management_security.xml ---
 <?xml version="1.0"?>
@@ -2739,6 +2772,22 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
 
     </data>
 </odoo>
+
+--- File: wizard/assign_technician_wizard.py ---
+from odoo import models, fields
+
+class AssignTechnicianWizard(models.TransientModel):
+    _name = 'assign.technician.wizard'
+    _description = 'Assign Technician Wizard'
+
+    technician_id = fields.Many2one('hr.employee', string="Technician", required=True)
+    workorder_id = fields.Many2one('maintenance.workorder', string="Work Order", required=True)
+
+    def action_assign(self):
+        self.workorder_id.technician_id = self.technician_id.id
+
+--- File: wizard/__init__.py ---
+from . import assign_technician_wizard
 
 --- File: data/sequences.xml ---
 <?xml version="1.0" encoding="UTF-8"?>
@@ -2956,6 +3005,25 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
               action="action_maintenance_sla_analytics"
               sequence="65"/>
 
+</odoo>
+
+--- File: views/assign_technician_wizard_view.xml ---
+<odoo>
+    <record id="view_assign_technician_wizard_form" model="ir.ui.view">
+        <field name="name">assign.technician.wizard.form</field>
+        <field name="model">assign.technician.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Technician">
+                <group>
+                    <field name="technician_id"/>
+                </group>
+                <footer>
+                    <button name="action_assign" string="Assign" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 </odoo>
 
 --- File: views/asset_performance_views.xml ---
@@ -4760,6 +4828,9 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
 
 </odoo>
 
+--- File: views/__init__.py ---
+
+
 --- File: views/building_views.xml ---
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
@@ -4973,7 +5044,7 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
                             <field name="description"/>
                         </page>
                         <page string="Sections &amp; Tasks">
-                            <field name="section_ids" readonly="1">
+                            <field name="section_ids" create="false" delete="false">
                                 <tree>
                                     <field name="sequence"/>
                                     <field name="name"/>
@@ -4983,21 +5054,16 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
                                         <field name="name" readonly="1"/>
                                         <field name="sequence" readonly="1"/>
                                     </group>
-                                    <!-- DO NOT ADD readonly="1" TO TASK_IDS HERE! -->
                                     <field name="task_ids">
                                         <tree editable="bottom">
                                             <field name="sequence" readonly="1"/>
                                             <field name="name" readonly="1"/>
                                             <field name="description" readonly="1"/>
                                             <field name="is_checklist_item" readonly="1"/>
-                                            <field name="is_done" widget="boolean_toggle"
-                                                attrs="{'readonly': [('workorder_id.status','!=','in_progress')]}"/>
-                                            <field name="before_image" widget="image"
-                                                attrs="{'readonly': [('workorder_id.status','!=','in_progress')]}"/>
-                                            <field name="after_image" widget="image"
-                                                attrs="{'readonly': [('workorder_id.status','!=','in_progress')]}"/>
-                                            <field name="notes"
-                                                attrs="{'readonly': [('workorder_id.status','!=','in_progress')]}"/>
+                                            <field name="is_done" widget="boolean_toggle"/>
+                                            <field name="before_image" widget="image"/>
+                                            <field name="after_image" widget="image"/>
+                                            <field name="notes"/>
                                         </tree>
                                     </field>
                                 </form>
@@ -5037,6 +5103,23 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
             </form>
         </field>
     </record>
+
+    <record id="view_maintenance_workorder_tree" model="ir.ui.view">
+        <field name="name">maintenance.workorder.tree</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="status=='done'" decoration-danger="status=='cancelled'" decoration-info="status=='in_progress'">
+                <field name="name"/>
+                <field name="status" widget="statusbar"/>
+                <field name="asset_id"/>
+                <field name="technician_id"/>
+                <button name="action_start_progress" string="Start Work" type="object" icon="fa-play"/>
+                <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
+                <button name="action_report_downtime" string="Report Downtime" type="object" icon="fa-clock-o"/>
+            </tree>
+        </field>
+    </record>
+
 </odoo>
 
 --- File: views/asset_category_views.xml ---
@@ -5173,6 +5256,44 @@ access_maintenance_workorder_section_user,maintenance.workorder.section user,mod
             </field>
         </record>
     </data>
+</odoo>
+
+--- File: views/maintenance_workorder_kanban.xml ---
+<odoo>
+    <record id="view_maintenance_workorder_kanban" model="ir.ui.view">
+        <field name="name">maintenance.workorder.kanban</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="status"/>
+                <field name="technician_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card">
+                            <strong><field name="name"/></strong>
+                            <div>Status: <field name="status"/></div>
+                            <div>Technician: <field name="technician_id"/></div>
+                            <div>
+                                <button type="object" name="action_start_progress"
+                                        class="btn btn-primary btn-sm">
+                                    Start Work
+                                </button>
+                                <button type="object" name="action_assign_technician"
+                                        class="btn btn-info btn-sm">
+                                    Assign Tech
+                                </button>
+                                <button type="object" name="action_report_downtime"
+                                        class="btn btn-warning btn-sm">
+                                    Report Downtime
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
 </odoo>
 
 --- File: views/workorder_type_views.xml ---

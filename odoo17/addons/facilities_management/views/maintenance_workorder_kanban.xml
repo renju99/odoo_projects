@@ -1,0 +1,36 @@
+<odoo>
+    <record id="view_maintenance_workorder_kanban" model="ir.ui.view">
+        <field name="name">maintenance.workorder.kanban</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="status"/>
+                <field name="technician_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card">
+                            <strong><field name="name"/></strong>
+                            <div>Status: <field name="status"/></div>
+                            <div>Technician: <field name="technician_id"/></div>
+                            <div>
+                                <button type="object" name="action_start_progress"
+                                        class="btn btn-primary btn-sm">
+                                    Start Work
+                                </button>
+                                <button type="object" name="action_assign_technician"
+                                        class="btn btn-info btn-sm">
+                                    Assign Tech
+                                </button>
+                                <button type="object" name="action_report_downtime"
+                                        class="btn btn-warning btn-sm">
+                                    Report Downtime
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

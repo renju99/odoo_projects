@@ -23,3 +23,4 @@ access_facilities_asset_performance_user,facilities.asset.performance.user,model
 access_asset_downtime_reason_user,asset.downtime.reason.user,model_asset_downtime_reason,base.group_user,1,1,1,1
 access_maintenance_job_plan_section_user,maintenance.job.plan.section user,model_maintenance_job_plan_section,base.group_user,1,1,1,1
 access_maintenance_workorder_section_user,maintenance.workorder.section user,model_maintenance_workorder_section,base.group_user,1,1,1,1
+access_assign_technician_wizard_user,assign.technician.wizard.user,model_assign_technician_wizard,base.group_user,1,1,1,1

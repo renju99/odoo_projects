@@ -115,4 +115,21 @@
             </form>
         </field>
     </record>
+
+    <record id="view_maintenance_workorder_tree" model="ir.ui.view">
+        <field name="name">maintenance.workorder.tree</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="status=='done'" decoration-danger="status=='cancelled'" decoration-info="status=='in_progress'">
+                <field name="name"/>
+                <field name="status" widget="statusbar"/>
+                <field name="asset_id"/>
+                <field name="technician_id"/>
+                <button name="action_start_progress" string="Start Work" type="object" icon="fa-play"/>
+                <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
+                <button name="action_report_downtime" string="Report Downtime" type="object" icon="fa-clock-o"/>
+            </tree>
+        </field>
+    </record>
+
 </odoo>
