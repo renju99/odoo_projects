@@ -9,6 +9,14 @@ class MaintenanceWorkOrder(models.Model):
     _description = 'Maintenance Work Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
+    SERVICE_TYPE_SELECTION = [
+        ('maintenance', 'Maintenance'),
+        ('cleaning', 'Cleaning'),
+        ('security', 'Security'),
+        ('esg', 'ESG Compliance'),
+        ('hse', 'HSE Incident')
+    ]
+
     name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True, default=lambda self: _('New'))
     asset_id = fields.Many2one('facilities.asset', string='Asset', required=True)
     schedule_id = fields.Many2one('asset.maintenance.schedule', string='Maintenance Schedule')
@@ -44,6 +52,19 @@ class MaintenanceWorkOrder(models.Model):
                                  help="The internal transfer for parts issued for this work order.")
     picking_count = fields.Integer(compute='_compute_picking_count', string='Transfers')
     has_parts = fields.Boolean(compute='_compute_has_parts', store=True, help="Indicates if this work order has parts lines.")
+
+    # --- ADDED FIELDS ---
+    service_type = fields.Selection(
+        SERVICE_TYPE_SELECTION,
+        string="Service Type",
+        tracking=True,
+        help="Department/Service this work order belongs to."
+    )
+    maintenance_team_id = fields.Many2one(
+        'maintenance.team', string="Maintenance Team",
+        help="The team assigned to handle this work order."
+    )
+    # --------------------
 
     # Hierarchical Sections
     section_ids = fields.One2many(

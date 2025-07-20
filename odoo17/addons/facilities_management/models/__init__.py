@@ -12,7 +12,6 @@ _logger = logging.getLogger(__name__)
 from . import hr_employee
 from . import product
 from . import maintenance_team
-from . import maintenance_request_stage
 from . import maintenance_workorder_type
 
 # REMOVED: from . import maintenance_job_plan_task (as it's defined in maintenance_job_plan.py)
@@ -30,7 +29,6 @@ from . import asset
 from . import asset_performance
 
 # 4. Transactional Models (Depend on many of the above)
-from . import maintenance_request
 from . import maintenance_workorder
 from . import maintenance_workorder_assignment
 from . import maintenance_workorder_part_line

@@ -40,6 +40,9 @@
                                 invisible="workorder_task_ids != False"
                                 readonly="status != 'draft'"
                                 help="Select a Job Plan to automatically populate tasks for this work order."/>
+                            <!-- NEW FIELDS -->
+                            <field name="service_type"/>
+                            <field name="maintenance_team_id"/>
                         </group>
                         <group string="Personnel &amp; Scheduled Dates">
                             <field name="technician_id"/>
@@ -124,6 +127,8 @@
                 <field name="name"/>
                 <field name="status" widget="statusbar"/>
                 <field name="asset_id"/>
+                <field name="service_type"/>
+                <field name="maintenance_team_id"/>
                 <field name="technician_id"/>
                 <button name="action_start_progress" string="Start Work" type="object" icon="fa-play"/>
                 <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
@@ -131,5 +136,4 @@
             </tree>
         </field>
     </record>
-
 </odoo>

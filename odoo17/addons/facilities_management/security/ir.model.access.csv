@@ -18,7 +18,6 @@ access_predictive_maintenance_user,predictive.maintenance.user,model_predictive_
 access_maintenance_workorder_sla_user,maintenance.workorder.sla.user,model_maintenance_workorder_sla,base.group_user,1,1,1,1
 access_maintenance_resource_utilization_user,maintenance.resource.utilization.user,model_maintenance_resource_utilization,base.group_user,1,1,1,1
 access_maintenance_sla_analytics_user,maintenance.sla.analytics.user,model_maintenance_sla_analytics,base.group_user,1,1,1,1
-access_maintenance_request_stage_user,maintenance.request.stage.user,model_maintenance_request_stage,base.group_user,1,1,1,1
 access_facilities_asset_performance_user,facilities.asset.performance.user,model_facilities_asset_performance,base.group_user,1,1,1,1
 access_asset_downtime_reason_user,asset.downtime.reason.user,model_asset_downtime_reason,base.group_user,1,1,1,1
 access_maintenance_job_plan_section_user,maintenance.job.plan.section user,model_maintenance_job_plan_section,base.group_user,1,1,1,1
