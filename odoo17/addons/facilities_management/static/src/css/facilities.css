@@ -145,6 +145,43 @@
     border-radius: 4px;
 }
 
+/* Asset History Timeline Styles */
+.o_asset_timeline {
+    margin: 2em 0;
+    padding-left: 1em;
+    border-left: 2px solid #007bff;
+}
+.o_timeline_event {
+    margin-bottom: 1.5em;
+    position: relative;
+    padding-left: 1.5em;
+}
+.o_timeline_event::before {
+    content: '';
+    position: absolute;
+    left: -1.1em;
+    top: 0.5em;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+}
+.o_timeline_event_maintenance::before { background: #28a745; }
+.o_timeline_event_depreciation::before { background: #ffc107; }
+.o_timeline_event_movement::before { background: #17a2b8; }
+
+.o_timeline_event strong {
+    font-size: 1rem;
+}
+.o_timeline_event .badge {
+    margin-left: 0.5em;
+    font-size: 0.85em;
+}
+.o_timeline_event .text-muted {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .o_facilities_card {
@@ -154,6 +191,12 @@
 
     .o_asset_kpi_card .kpi-value {
         font-size: 2rem;
+    }
+    .o_asset_timeline {
+        padding-left: 0.5em;
+    }
+    .o_timeline_event {
+        padding-left: 1em;
     }
 }
 

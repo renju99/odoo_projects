@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from datetime import timedelta
 
 class MaintenanceWorkorderPermit(models.Model):
     _name = 'maintenance.workorder.permit'
@@ -101,3 +102,32 @@ class MaintenanceWorkorderPermit(models.Model):
                 permit.message_post(body=_("Permit rejected by Facility Manager. Reason: %s" % permit.rejected_reason))
             else:
                 raise UserError(_("Only the facility manager of this facility can reject this permit."))
+
+    def cron_remind_expiring_permits(self):
+        """Send reminders and create activities for permits expiring soon."""
+        today = fields.Date.today()
+        threshold = today + timedelta(days=7)
+        expiring_permits = self.search([
+            ('expiry_date', '!=', False),
+            ('status', 'in', ['approved']),
+            ('expiry_date', '<=', threshold)
+        ])
+        for permit in expiring_permits:
+            # Notify the facility manager
+            manager_user = permit.facility_manager_id
+            if manager_user:
+                # Create scheduled activity for manager
+                activity_type = self.env.ref('mail.mail_activity_data_todo')
+                model_id = self.env['ir.model']._get_id('maintenance.workorder.permit')
+                self.env['mail.activity'].create({
+                    'activity_type_id': activity_type.id,
+                    'res_id': permit.id,
+                    'res_model_id': model_id,
+                    'user_id': manager_user.id,
+                    'summary': _("Permit Expiry Reminder"),
+                    'note': _("Permit '%s' for Work Order '%s' is expiring on %s. Please take necessary action.") % (
+                        permit.name, permit.workorder_id.name, permit.expiry_date),
+                    'date_deadline': permit.expiry_date,
+                })
+                permit.message_post(body=_("Reminder: Permit is expiring soon (%s)." % permit.expiry_date),
+                                    partner_ids=[manager_user.partner_id.id])

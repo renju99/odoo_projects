@@ -11,7 +11,6 @@ access_maintenance_workorder_user,maintenance.workorder.user,model_maintenance_w
 access_maintenance_workorder_task_user,maintenance.workorder.task.user,model_maintenance_workorder_task,base.group_user,1,1,1,1
 access_maintenance_workorder_part_line_user,maintenance.workorder.part.line.user,model_maintenance_workorder_part_line,base.group_user,1,1,1,1
 access_maintenance_workorder_assignment_user,maintenance.workorder.assignment.user,model_maintenance_workorder_assignment,base.group_user,1,1,1,1
-access_maintenance_workorder_type_user,maintenance.workorder.type.user,model_maintenance_workorder_type,base.group_user,1,1,1,1
 access_maintenance_job_plan_user,maintenance.job.plan.user,model_maintenance_job_plan,base.group_user,1,1,1,1
 access_maintenance_job_plan_task_user,maintenance.job.plan.task.user,model_maintenance_job_plan_task,base.group_user,1,1,1,1
 access_predictive_maintenance_user,predictive.maintenance.user,model_predictive_maintenance,base.group_user,1,1,1,1

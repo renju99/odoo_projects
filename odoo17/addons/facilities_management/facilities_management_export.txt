@@ -43,10 +43,12 @@
         'views/maintenance_workorder_part_line_views.xml',
         'views/product_views.xml',
         'views/maintenance_job_plan_views.xml',
+        'views/maintenance_team_views.xml',
         'views/sla_views.xml',
         'views/asset_performance_views.xml',
         'views/asset_calendar_views.xml',
         'views/assign_technician_wizard_view.xml',
+        'views/maintenance_workorder_permit_views.xml',
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',
@@ -459,13 +461,116 @@ console.log("Facilities Management JavaScript loaded");
 --- File: demo/facility_demo.xml ---
 
 
+--- File: models/workorder_permit.py ---
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+
+class MaintenanceWorkorderPermit(models.Model):
+    _name = 'maintenance.workorder.permit'
+    _description = 'Work Order Permit'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    name = fields.Char(string="Permit Name", required=True, tracking=True)
+    permit_type = fields.Selection([
+        ('electrical', 'Electrical'),
+        ('mechanical', 'Mechanical'),
+        ('hotwork', 'Hot Work'),
+        ('confined', 'Confined Space'),
+        ('general', 'General'),
+    ], string="Permit Type", required=True, tracking=True)
+    workorder_id = fields.Many2one('maintenance.workorder', string="Work Order", required=True, ondelete='cascade', tracking=True)
+    issued_date = fields.Date(string="Issued Date", tracking=True)
+    expiry_date = fields.Date(string="Expiry Date", tracking=True)
+    status = fields.Selection([
+        ('requested', 'Requested'),
+        ('pending_manager_approval', 'Pending Manager Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired'),
+    ], string="Status", default='requested', required=True, tracking=True)
+    notes = fields.Text(string="Notes")
+    requested_by_id = fields.Many2one('res.users', string="Requested By", default=lambda self: self.env.user, tracking=True)
+    approved_by_id = fields.Many2one('res.users', string="Approved By", tracking=True)
+    rejected_reason = fields.Text(string="Rejection Reason", tracking=True)
+    attachment_ids = fields.Many2many('ir.attachment', string="Attachments")
+    facility_manager_id = fields.Many2one(
+        'res.users',
+        string="Facility Manager",
+        compute='_compute_facility_manager',
+        store=False,
+    )
+
+    @api.depends('workorder_id')
+    def _compute_facility_manager(self):
+        for permit in self:
+            manager = False
+            if permit.workorder_id and permit.workorder_id.asset_id and permit.workorder_id.asset_id.facility_id:
+                facility = permit.workorder_id.asset_id.facility_id
+                manager = facility.manager_id
+                if hasattr(manager, 'user_id') and manager.user_id:
+                    permit.facility_manager_id = manager.user_id
+                elif manager and manager._name == 'res.users':
+                    permit.facility_manager_id = manager
+                else:
+                    permit.facility_manager_id = False
+            else:
+                permit.facility_manager_id = False
+
+    def action_submit_for_approval(self):
+        for permit in self:
+            if permit.status != 'requested':
+                raise UserError(_("Permit is not in 'Requested' stage!"))
+            manager_user = permit.facility_manager_id
+            if not manager_user:
+                raise UserError(_("No facility manager found for this permit's facility."))
+            permit.status = 'pending_manager_approval'
+            # Create scheduled activity for the manager
+            activity_type = self.env.ref('mail.mail_activity_data_todo')
+            model_id = self.env['ir.model']._get_id('maintenance.workorder.permit')
+            self.env['mail.activity'].create({
+                'activity_type_id': activity_type.id,
+                'res_id': permit.id,
+                'res_model_id': model_id,
+                'user_id': manager_user.id,
+                'summary': _("Permit Approval Required"),
+                'note': _("Please approve permit '%s' for work order '%s'.") % (permit.name, permit.workorder_id.name),
+                'date_deadline': fields.Date.today(),
+            })
+            permit.message_post(body=_("Approval request sent to Facility Manager: %s" % manager_user.name),
+                                partner_ids=[manager_user.partner_id.id])
+
+    def action_approve(self):
+        for permit in self:
+            manager_user = permit.facility_manager_id
+            if permit.status != 'pending_manager_approval':
+                raise UserError(_("Permit is not awaiting manager approval."))
+            if manager_user and self.env.user == manager_user:
+                permit.status = 'approved'
+                permit.approved_by_id = self.env.user.id
+                permit.issued_date = fields.Date.today()  # Set issued date to approval date
+                permit.message_post(body=_("Permit approved by Facility Manager."))
+            else:
+                raise UserError(_("Only the facility manager of this facility can approve this permit."))
+
+    def action_reject(self):
+        for permit in self:
+            manager_user = permit.facility_manager_id
+            if permit.status != 'pending_manager_approval':
+                raise UserError(_("Permit is not awaiting manager approval."))
+            if manager_user and self.env.user == manager_user:
+                # Require rejection reason
+                if not permit.rejected_reason:
+                    raise UserError(_("Please provide a rejection reason before rejecting the permit."))
+                permit.status = 'rejected'
+                permit.message_post(body=_("Permit rejected by Facility Manager. Reason: %s" % permit.rejected_reason))
+            else:
+                raise UserError(_("Only the facility manager of this facility can reject this permit."))
+
 --- File: models/workorder_sla.py ---
 from odoo import models, fields, api, _
-from datetime import timedelta
 from odoo.exceptions import ValidationError
 
-
-class WorkOrderSLA(models.Model):
+class MaintenanceWorkOrderSLA(models.Model):
     _name = 'maintenance.workorder.sla'
     _description = 'Work Order SLA Configuration'
     _rec_name = 'name'
@@ -473,6 +578,7 @@ class WorkOrderSLA(models.Model):
 
     name = fields.Char(string='SLA Name', required=True)
     active = fields.Boolean(default=True)
+    sequence = fields.Integer(string='Sequence', default=10, help="Lower sequence = higher priority for matching")
 
     # SLA Criteria
     priority = fields.Selection([
@@ -482,8 +588,7 @@ class WorkOrderSLA(models.Model):
         ('3', 'High'),
     ], string='Priority', help="Leave empty to apply to all priorities")
 
-    facility_id = fields.Many2one('facilities.facility', string='Project/Facility',
-                                  help="Leave empty to apply to all facilities")
+    facility_id = fields.Many2one('facilities.facility', string='Facility', help="Leave empty to apply to all facilities")
     location = fields.Char(string='Location', help="Leave empty to apply to all locations")
     work_order_type = fields.Selection([
         ('preventive', 'Preventive'),
@@ -492,37 +597,33 @@ class WorkOrderSLA(models.Model):
         ('inspection', 'Inspection'),
     ], string='Work Order Type', help="Leave empty to apply to all types")
 
-    # SLA Targets (in hours)
-    response_time_hours = fields.Float(string='Response Time (Hours)', required=True, default=4.0,
-                                       help="Time to acknowledge/start work")
-    resolution_time_hours = fields.Float(string='Resolution Time (Hours)', required=True, default=24.0,
-                                         help="Time to complete work")
+    response_time_hours = fields.Float(string='Response Time (Hours)', required=True, default=4.0, help="Time to acknowledge/start work")
+    resolution_time_hours = fields.Float(string='Resolution Time (Hours)', required=True, default=24.0, help="Time to complete work")
 
-    # SLA Thresholds
-    warning_threshold = fields.Float(string='Warning Threshold (%)', default=80.0,
-                                     help="Send warning when SLA reaches this percentage")
-    critical_threshold = fields.Float(string='Critical Threshold (%)', default=95.0,
-                                      help="Send critical alert when SLA reaches this percentage")
+    warning_threshold = fields.Float(string='Warning Threshold (%)', default=80.0, help="Send warning when SLA reaches this percentage")
+    critical_threshold = fields.Float(string='Critical Threshold (%)', default=95.0, help="Send critical alert when SLA reaches this percentage")
 
-    # Resource Utilization Targets
-    target_utilization_percentage = fields.Float(string='Target Utilization (%)', default=80.0)
-    max_concurrent_workorders = fields.Integer(string='Max Concurrent Work Orders', default=5)
-
-    # Escalation
     escalation_enabled = fields.Boolean(string='Enable Escalation', default=True)
-    escalation_manager_id = fields.Many2one('hr.employee', string='Escalation Manager',
-                                            domain="[('user_id', '!=', False)]")
-
-    sequence = fields.Integer(string='Sequence', default=10,
-                              help="Lower sequence = higher priority for matching")
+    escalation_manager_id = fields.Many2one('hr.employee', string='Escalation Manager', domain="[('user_id', '!=', False)]")
 
     @api.model
     def find_matching_sla(self, workorder):
-        """Find the most specific SLA configuration for a work order"""
+        """
+        Find the most specific, active SLA configuration for a work order.
+        Uses a weighted score: priority (4), facility (3), location (2), type (1).
+        """
         domain = [('active', '=', True)]
-
-        # Find all potential SLAs and score them by specificity
         all_slas = self.search(domain, order='sequence asc')
+
+        # Attempt to get facility and location via asset, fallback to direct field
+        facility_id = getattr(workorder.asset_id, 'facility_id', None)
+        if facility_id:
+            facility_id = facility_id.id
+        else:
+            facility_id = getattr(workorder, 'facility_id', False)
+            facility_id = facility_id.id if facility_id else False
+
+        location = getattr(workorder.asset_id, 'location', None) or getattr(workorder, 'location', None)
 
         best_sla = None
         best_score = -1
@@ -531,25 +632,30 @@ class WorkOrderSLA(models.Model):
             score = 0
             matches = True
 
-            # Check if this SLA matches the workorder criteria
+            # Priority
             if sla.priority and sla.priority != workorder.priority:
                 matches = False
-            elif sla.priority == workorder.priority:
+            elif sla.priority and sla.priority == workorder.priority:
                 score += 4
 
-            if sla.facility_id and workorder.asset_id.facility_id and sla.facility_id.id != workorder.asset_id.facility_id.id:
+            # Facility
+            if sla.facility_id and facility_id and sla.facility_id.id != facility_id:
                 matches = False
-            elif sla.facility_id and workorder.asset_id.facility_id and sla.facility_id.id == workorder.asset_id.facility_id.id:
+            elif sla.facility_id and facility_id and sla.facility_id.id == facility_id:
                 score += 3
 
-            if sla.location and workorder.asset_id.location and sla.location != workorder.asset_id.location:
+            # Location
+            sla_loc = sla.location.lower().strip() if sla.location else ""
+            wo_loc = (location or "").lower().strip()
+            if sla.location and wo_loc and sla_loc != wo_loc:
                 matches = False
-            elif sla.location and workorder.asset_id.location and sla.location == workorder.asset_id.location:
+            elif sla.location and wo_loc and sla_loc == wo_loc:
                 score += 2
 
+            # WO Type
             if sla.work_order_type and sla.work_order_type != workorder.work_order_type:
                 matches = False
-            elif sla.work_order_type == workorder.work_order_type:
+            elif sla.work_order_type and sla.work_order_type == workorder.work_order_type:
                 score += 1
 
             if matches and score > best_score:
@@ -715,19 +821,6 @@ class FacilityRoom(models.Model):
             if not rec.floor_id:
                 raise fields.ValidationError("A room must be linked to a Floor.")
 
---- File: models/maintenance_workorder_type.py ---
-# -*- coding: utf-8 -*-
-from odoo import models, fields
-
-class MaintenanceWorkorderType(models.Model):
-    _name = 'maintenance.workorder.type'
-    _description = 'Maintenance Workorder Type'
-    _order = 'name'
-
-    name = fields.Char(string='Type Name', required=True, translate=True)
-    description = fields.Text(string='Description')
-    # Add any other fields or methods specific to work order types here
-
 --- File: models/maintenance_workorder_section.py ---
 from odoo import models, fields
 
@@ -740,27 +833,6 @@ class MaintenanceWorkorderSection(models.Model):
     sequence = fields.Integer(string='Sequence', default=10, readonly=True)
     workorder_id = fields.Many2one('maintenance.workorder', string='Work Order', required=True, ondelete='cascade')
     task_ids = fields.One2many('maintenance.workorder.task', 'section_id', string='Tasks')
-
---- File: models/maintenance_request_stage.py ---
-# /home/ranjith/odoo_projects/odoo17/addons/facilities_management/models/maintenance_request_stage.py
-
-from odoo import models, fields, api
-
-class MaintenanceRequestStage(models.Model):
-    _name = 'maintenance.request.stage'
-    _description = 'Maintenance Request Stage'
-    _order = 'sequence, name'
-
-    name = fields.Char(string='Stage Name', required=True, translate=True)
-    sequence = fields.Integer(string='Sequence', default=10)
-    fold = fields.Boolean(string='Folded in Kanban',
-                          help='This stage is folded in the Kanban view when there are no records in it.')
-    # ADD THIS FIELD: 'done'
-    done = fields.Boolean(string='Done Stage',
-                          help="If checked, requests in this stage are considered done/completed.")
-    # You might also want to add a 'cancelled' or 'closed' boolean field if your stages include those
-    # cancelled = fields.Boolean(string='Cancelled Stage', help="If checked, requests in this stage are considered cancelled.")
-    # closed = fields.Boolean(string='Closed Stage', help="If checked, requests in this stage are considered closed.")
 
 --- File: models/maintenance_workorder_task.py ---
 from odoo import fields, models, api, _
@@ -855,6 +927,23 @@ class FacilityAsset(models.Model):
         ('disposed', 'Disposed'),
     ], string='State', default='draft', tracking=True, required=True)
 
+    # State transition buttons
+    def action_activate(self):
+        for asset in self:
+            asset.state = 'active'
+
+    def action_set_maintenance(self):
+        for asset in self:
+            asset.state = 'maintenance'
+
+    def action_set_active(self):
+        for asset in self:
+            asset.state = 'active'
+
+    def action_dispose(self):
+        for asset in self:
+            asset.state = 'disposed'
+
     # Relationships
     maintenance_ids = fields.One2many('asset.maintenance.schedule', 'asset_id', string='Maintenance Schedules')
     depreciation_ids = fields.One2many('facilities.asset.depreciation', 'asset_id', string='Depreciation Records')
@@ -881,7 +970,31 @@ class FacilityAsset(models.Model):
         string='Condition',
         tracking=True
     )
-    location = fields.Char('Location', tracking=True)
+    # location = fields.Char('Location', tracking=True)  # REMOVED
+
+    # Location Hierarchy Fields
+    room_id = fields.Many2one(
+        'facilities.room', string='Room',
+        tracking=True
+    )
+    building_id = fields.Many2one(
+        'facilities.building', string='Building',
+        compute='_compute_building_floor',
+        store=True,
+        readonly=False # allow override if needed
+    )
+    floor_id = fields.Many2one(
+        'facilities.floor', string='Floor',
+        compute='_compute_building_floor',
+        store=True,
+        readonly=False # allow override if needed
+    )
+
+    @api.depends('room_id')
+    def _compute_building_floor(self):
+        for asset in self:
+            asset.building_id = asset.room_id.building_id if asset.room_id and asset.room_id.building_id else False
+            asset.floor_id = asset.room_id.floor_id if asset.room_id and asset.room_id.floor_id else False
 
     # People & Organization
     responsible_id = fields.Many2one('res.users', string='Responsible Person', tracking=True)
@@ -1236,9 +1349,6 @@ _logger = logging.getLogger(__name__)
 from . import hr_employee
 from . import product
 from . import maintenance_team
-from . import maintenance_request_stage
-from . import maintenance_workorder_type
-
 # REMOVED: from . import maintenance_job_plan_task (as it's defined in maintenance_job_plan.py)
 from . import maintenance_job_plan      # <--- This import is correct and will load both classes
 
@@ -1249,12 +1359,12 @@ from . import room
 from . import facility
 from . import asset_category
 from . import asset
+from . import workorder_permit
 
 # 3. Asset Performance (depends on asset)
 from . import asset_performance
 
 # 4. Transactional Models (Depend on many of the above)
-from . import maintenance_request
 from . import maintenance_workorder
 from . import maintenance_workorder_assignment
 from . import maintenance_workorder_part_line
@@ -2009,7 +2119,6 @@ class FacilityBuilding(models.Model):
                 raise fields.ValidationError("A building must be linked to a Facility.")
 
 --- File: models/maintenance_team.py ---
-# models/maintenance_team.py
 from odoo import fields, models, api
 
 class MaintenanceTeam(models.Model):
@@ -2017,7 +2126,23 @@ class MaintenanceTeam(models.Model):
     _description = 'Maintenance Team'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
+    SERVICE_TYPE_SELECTION = [
+        ('maintenance', 'Maintenance'),
+        ('cleaning', 'Cleaning'),
+        ('security', 'Security'),
+        ('esg', 'ESG Compliance'),
+        ('hse', 'HSE Incident')
+    ]
+
     name = fields.Char(string="Team Name", required=True)
+    service_type = fields.Selection(
+        SERVICE_TYPE_SELECTION,
+        string="Service Type",
+        required=True,
+        default='maintenance',
+        tracking=True,
+        help="Department/Service this team belongs to."
+    )
     leader_id = fields.Many2one(
         'hr.employee', string="Team Leader",
         domain="[('work_email', '!=', False)]",
@@ -2034,6 +2159,10 @@ class MaintenanceTeam(models.Model):
     )
     workorder_count = fields.Integer(
         string="Number of Requests", compute='_compute_workorder_count'
+    )
+    company_id = fields.Many2one(
+        'res.company', string='Company', required=True,
+        default=lambda self: self.env.company
     )
 
     @api.depends('request_ids')
@@ -2256,16 +2385,47 @@ class MaintenanceJobPlan(models.Model):
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
+from datetime import timedelta
 
 _logger = logging.getLogger(__name__)
+
+APPROVAL_STATES = [
+    ('draft', 'Draft'),
+    ('submitted', 'Submitted'),
+    ('supervisor', 'Supervisor Approved'),
+    ('manager', 'Manager Approved'),
+    ('approved', 'Fully Approved'),
+    ('in_progress', 'In Progress'),
+    ('done', 'Completed'),
+    ('refused', 'Refused'),
+    ('cancelled', 'Cancelled'),
+    ('escalated', 'Escalated'),
+]
 
 class MaintenanceWorkOrder(models.Model):
     _name = 'maintenance.workorder'
     _description = 'Maintenance Work Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True, default=lambda self: _('New'))
+    SERVICE_TYPE_SELECTION = [
+        ('maintenance', 'Maintenance'),
+        ('cleaning', 'Cleaning'),
+        ('security', 'Security'),
+        ('esg', 'ESG Compliance'),
+        ('hse', 'HSE Incident')
+    ]
+
+    name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True,
+                       default=lambda self: _('New'))
     asset_id = fields.Many2one('facilities.asset', string='Asset', required=True)
+    facility_id = fields.Many2one('facilities.facility', string='Facility',
+                                  related='asset_id.facility_id', store=True, readonly=True)
+    room_id = fields.Many2one('facilities.room', string='Room',
+                              related='asset_id.room_id', store=True, readonly=True)
+    building_id = fields.Many2one('facilities.building', string='Building',
+                                  related='asset_id.building_id', store=True, readonly=True)
+    floor_id = fields.Many2one('facilities.floor', string='Floor',
+                               related='asset_id.floor_id', store=True, readonly=True)
     schedule_id = fields.Many2one('asset.maintenance.schedule', string='Maintenance Schedule')
     work_order_type = fields.Selection([
         ('preventive', 'Preventive'),
@@ -2274,6 +2434,9 @@ class MaintenanceWorkOrder(models.Model):
         ('inspection', 'Inspection'),
     ], string='Type', default='corrective', required=True)
     technician_id = fields.Many2one('hr.employee', string='Primary Technician', domain="[('is_technician', '=', True)]")
+    supervisor_id = fields.Many2one('res.users', string="Supervisor", readonly=True)
+    permit_ids = fields.One2many('maintenance.workorder.permit', 'workorder_id', string='Permits')
+    manager_id = fields.Many2one('res.users', string="Manager", readonly=True)
     start_date = fields.Datetime(string='Scheduled Start Date')
     end_date = fields.Datetime(string='Scheduled End Date')
     actual_start_date = fields.Datetime(string='Actual Start Date', readonly=True)
@@ -2298,22 +2461,94 @@ class MaintenanceWorkOrder(models.Model):
     picking_id = fields.Many2one('stock.picking', string='Parts Transfer', copy=False,
                                  help="The internal transfer for parts issued for this work order.")
     picking_count = fields.Integer(compute='_compute_picking_count', string='Transfers')
-    has_parts = fields.Boolean(compute='_compute_has_parts', store=True, help="Indicates if this work order has parts lines.")
+    has_parts = fields.Boolean(compute='_compute_has_parts', store=True,
+                               help="Indicates if this work order has parts lines.")
 
-    # Hierarchical Sections
-    section_ids = fields.One2many(
-        'maintenance.workorder.section', 'workorder_id',
-        string='Sections'
+    service_type = fields.Selection(
+        SERVICE_TYPE_SELECTION,
+        string="Service Type",
+        tracking=True,
+        help="Department/Service this work order belongs to."
+    )
+    maintenance_team_id = fields.Many2one(
+        'maintenance.team', string="Maintenance Team",
+        help="The team assigned to handle this work order."
     )
 
-    # Flat task list (legacy support)
+    section_ids = fields.One2many('maintenance.workorder.section', 'workorder_id', string='Sections')
     workorder_task_ids = fields.One2many('maintenance.workorder.task', 'workorder_id', string='Tasks', copy=True)
-
     all_tasks_completed = fields.Boolean(compute='_compute_all_tasks_completed', store=False,
                                          help="Indicates if all checklist tasks are marked as completed.")
-
     job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan',
                                   help="The job plan linked to this work order, providing detailed tasks.")
+
+    sla_id = fields.Many2one('maintenance.workorder.sla', string='Applied SLA', readonly=True)
+    sla_response_deadline = fields.Datetime(string='Response Deadline', readonly=True)
+    sla_resolution_deadline = fields.Datetime(string='Resolution Deadline', readonly=True)
+    sla_response_status = fields.Selection([
+        ('on_time', 'On Time'),
+        ('warning', 'Warning'),
+        ('critical', 'Critical'),
+        ('breached', 'Breached')
+    ], string='Response SLA Status', compute='_compute_sla_status', store=True)
+    sla_resolution_status = fields.Selection([
+        ('on_time', 'On Time'),
+        ('warning', 'Warning'),
+        ('critical', 'Critical'),
+        ('breached', 'Breached')
+    ], string='Resolution SLA Status', compute='_compute_sla_status', store=True)
+
+    approval_state = fields.Selection(
+        APPROVAL_STATES, string="Approval State", default='draft', tracking=True
+    )
+    submitted_by_id = fields.Many2one('res.users', string="Submitted By", readonly=True)
+    approved_by_id = fields.Many2one('res.users', string="Approved By", readonly=True)
+    approval_request_date = fields.Datetime(string="Approval Requested At")
+    escalation_deadline = fields.Datetime(string="Escalation Deadline")
+    escalation_to_id = fields.Many2one('res.users', string="Escalate To")
+    escalation_count = fields.Integer(string="Escalation Count", default=0, readonly=True)
+
+    @api.onchange('technician_id')
+    def _onchange_technician_fill_supervisor_manager(self):
+        for rec in self:
+            rec.supervisor_id, rec.manager_id = rec._get_supervisor_manager_from_technician(rec.technician_id)
+
+    def _get_supervisor_manager_from_technician(self, technician):
+        supervisor_user = False
+        manager_user = False
+        if technician and technician.parent_id and technician.parent_id.user_id:
+            supervisor_user = technician.parent_id.user_id
+            if technician.parent_id.parent_id and technician.parent_id.parent_id.user_id:
+                manager_user = technician.parent_id.parent_id.user_id
+        return supervisor_user, manager_user
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', _('New')) == _('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.workorder') or _('New')
+            technician = self.env['hr.employee'].browse(vals.get('technician_id'))
+            supervisor_user, manager_user = self._get_supervisor_manager_from_technician(technician)
+            vals['supervisor_id'] = supervisor_user.id if supervisor_user else False
+            vals['manager_id'] = manager_user.id if manager_user else False
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.job_plan_id:
+                rec._copy_job_plan_sections_and_tasks()
+            rec._apply_sla()
+        return records
+
+    def write(self, vals):
+        if 'technician_id' in vals:
+            technician = self.env['hr.employee'].browse(vals['technician_id'])
+            supervisor_user, manager_user = self._get_supervisor_manager_from_technician(technician)
+            vals['supervisor_id'] = supervisor_user.id if supervisor_user else False
+            vals['manager_id'] = manager_user.id if manager_user else False
+        result = super().write(vals)
+        if any(field in vals for field in ['priority', 'asset_id', 'work_order_type']):
+            for rec in self:
+                rec._apply_sla()
+        return result
 
     @api.depends('section_ids.task_ids.is_done', 'workorder_task_ids.is_done')
     def _compute_all_tasks_completed(self):
@@ -2336,19 +2571,192 @@ class MaintenanceWorkOrder(models.Model):
         for rec in self:
             rec.picking_count = 1 if rec.picking_id else 0
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.workorder') or _('New')
-        records = super().create(vals_list)
-        for rec in records:
-            if rec.job_plan_id:
-                rec._copy_job_plan_sections_and_tasks()
-        return records
+    def _apply_sla(self):
+        try:
+            sla = self.env['maintenance.workorder.sla'].find_matching_sla(self)
+            if sla:
+                current_time = fields.Datetime.now()
+                self.write({
+                    'sla_id': sla.id,
+                    'sla_response_deadline': current_time + timedelta(hours=sla.response_time_hours),
+                    'sla_resolution_deadline': current_time + timedelta(hours=sla.resolution_time_hours),
+                })
+        except Exception:
+            pass
+
+    @api.depends('sla_response_deadline', 'sla_resolution_deadline', 'actual_start_date', 'actual_end_date', 'status')
+    def _compute_sla_status(self):
+        for record in self:
+            if not record.sla_response_deadline:
+                record.sla_response_status = 'on_time'
+                record.sla_resolution_status = 'on_time'
+                continue
+
+            current_time = fields.Datetime.now()
+
+            # Response SLA Status
+            if record.actual_start_date:
+                record.sla_response_status = 'on_time'
+            else:
+                time_remaining = (record.sla_response_deadline - current_time).total_seconds()
+                total_time = (record.sla_response_deadline - record.create_date).total_seconds()
+                percentage_used = ((total_time - time_remaining) / total_time) * 100 if total_time > 0 else 0
+
+                if time_remaining <= 0:
+                    record.sla_response_status = 'breached'
+                elif percentage_used >= (record.sla_id.critical_threshold if record.sla_id else 95):
+                    record.sla_response_status = 'critical'
+                elif percentage_used >= (record.sla_id.warning_threshold if record.sla_id else 80):
+                    record.sla_response_status = 'warning'
+                else:
+                    record.sla_response_status = 'on_time'
+
+            # Resolution SLA Status
+            if record.status == 'done':
+                record.sla_resolution_status = 'on_time'
+            else:
+                time_remaining = (record.sla_resolution_deadline - current_time).total_seconds()
+                total_time = (record.sla_resolution_deadline - record.create_date).total_seconds()
+                percentage_used = ((total_time - time_remaining) / total_time) * 100 if total_time > 0 else 0
+
+                if time_remaining <= 0:
+                    record.sla_resolution_status = 'breached'
+                elif percentage_used >= (record.sla_id.critical_threshold if record.sla_id else 95):
+                    record.sla_resolution_status = 'critical'
+                elif percentage_used >= (record.sla_id.warning_threshold if record.sla_id else 80):
+                    record.sla_resolution_status = 'warning'
+                else:
+                    record.sla_resolution_status = 'on_time'
+
+    def _sync_status_with_approval(self):
+        for rec in self:
+            if rec.approval_state in ['refused', 'cancelled']:
+                rec.status = 'cancelled'
+            elif rec.approval_state == 'done':
+                rec.status = 'done'
+            elif rec.approval_state == 'in_progress':
+                rec.status = 'in_progress'
+            elif rec.approval_state == 'draft':
+                rec.status = 'draft'
+
+    def _create_approval_activity(self, user, summary, note):
+        if not user or not user.id:
+            _logger.warning("No valid user for activity: %s", user)
+            return
+        activity_type = self.env.ref('mail.mail_activity_data_todo')
+        model_id = self.env['ir.model']._get_id('maintenance.workorder')
+        self.env['mail.activity'].create({
+            'activity_type_id': activity_type.id,
+            'res_id': self.id,
+            'res_model_id': model_id,
+            'user_id': user.id,
+            'summary': summary,
+            'note': note,
+            'date_deadline': fields.Date.today() + timedelta(days=1),
+        })
+
+    def action_submit_for_approval(self):
+        for rec in self:
+            if rec.approval_state != 'draft':
+                raise UserError(_("Only draft work orders can be submitted!"))
+            rec.write({
+                'approval_state': 'submitted',
+                'submitted_by_id': self.env.user.id,
+                'approval_request_date': fields.Datetime.now(),
+                'escalation_deadline': fields.Datetime.now() + timedelta(hours=24),
+                'escalation_count': 0,
+            })
+            rec._sync_status_with_approval()
+            if rec.supervisor_id:
+                rec._create_approval_activity(
+                    rec.supervisor_id,
+                    _('Supervisor Approval Required'),
+                    _('Please approve work order %s.') % rec.name
+                )
+
+    def action_supervisor_approve(self):
+        for rec in self:
+            if rec.approval_state != 'submitted':
+                raise UserError(_("Must be in submitted state!"))
+            rec.write({
+                'approval_state': 'supervisor',
+                'approved_by_id': self.env.user.id,
+                'escalation_deadline': fields.Datetime.now() + timedelta(hours=24),
+                'escalation_count': rec.escalation_count,
+            })
+            rec._sync_status_with_approval()
+            if rec.manager_id:
+                rec._create_approval_activity(
+                    rec.manager_id,
+                    _('Manager Approval Required'),
+                    _('Please approve work order %s.') % rec.name
+                )
+
+    def action_manager_approve(self):
+        for rec in self:
+            if rec.approval_state != 'supervisor':
+                raise UserError(_("Must be supervisor approved!"))
+            rec.write({
+                'approval_state': 'manager',
+                'approved_by_id': self.env.user.id,
+                'escalation_deadline': False,
+                'escalation_count': rec.escalation_count,
+            })
+            rec._sync_status_with_approval()
+
+    def action_fully_approve(self):
+        for rec in self:
+            if rec.approval_state != 'manager':
+                raise UserError(_("Must be manager approved!"))
+            rec.write({
+                'approval_state': 'approved',
+                'approved_by_id': self.env.user.id,
+            })
+            rec._sync_status_with_approval()
+            if rec.technician_id and hasattr(rec.technician_id, 'user_id') and rec.technician_id.user_id:
+                rec._create_approval_activity(
+                    rec.technician_id.user_id,
+                    _('Start Work Order'),
+                    _('You can start work order %s.') % rec.name
+                )
+
+    def action_refuse(self):
+        for rec in self:
+            rec.write({'approval_state': 'refused'})
+            rec._sync_status_with_approval()
+
+    def action_cancel(self):
+        for rec in self:
+            rec.write({'approval_state': 'cancelled'})
+            rec._sync_status_with_approval()
+
+    def action_escalate(self):
+        for rec in self:
+            if rec.escalation_deadline and fields.Datetime.now() > rec.escalation_deadline:
+                if rec.approval_state == 'submitted' and rec.manager_id:
+                    rec.write({
+                        'approval_state': 'escalated',
+                        'escalation_to_id': rec.manager_id.id,
+                        'escalation_count': rec.escalation_count + 1,
+                        'escalation_deadline': fields.Datetime.now() + timedelta(hours=24),
+                    })
+                    rec._sync_status_with_approval()
+                    rec._create_approval_activity(
+                        rec.manager_id,
+                        _('Manager Approval Required (Escalated)'),
+                        _('Work order %s has been escalated for your approval.') % rec.name
+                    )
+
+    @api.model
+    def cron_auto_escalate_workorders(self):
+        workorders = self.search([
+            ('approval_state', 'in', ['submitted', 'supervisor']),
+            ('escalation_deadline', '<', fields.Datetime.now())
+        ])
+        for wo in workorders:
+            wo.action_escalate()
 
     def _copy_job_plan_sections_and_tasks(self):
-        """Copy sections & tasks from job plan to work order."""
         self.ensure_one()
         if self.job_plan_id and not self.section_ids:
             for section_template in self.job_plan_id.section_ids.sorted('sequence'):
@@ -2369,13 +2777,6 @@ class MaintenanceWorkOrder(models.Model):
                         'is_done': False,
                         'notes': False,
                     })
-
-    def action_cancel(self):
-        for rec in self:
-            if rec.status not in ('done', 'cancelled'):
-                rec.write({'status': 'cancelled'})
-            else:
-                raise UserError(_("Cannot cancel a completed or already cancelled work order."))
 
     def action_start_progress(self):
         for rec in self:
@@ -2403,14 +2804,15 @@ class MaintenanceWorkOrder(models.Model):
 
     def action_reset_to_draft(self):
         for rec in self:
-            if rec.status in ('done', 'cancelled'):
+            if rec.status != 'draft':
                 rec.write({
                     'status': 'draft',
                     'actual_start_date': False,
                     'actual_end_date': False,
                 })
+                rec.approval_state = 'draft'
             else:
-                raise UserError(_("Only completed or cancelled work orders can be reset to draft."))
+                raise UserError(_("Work order is already in draft state."))
 
     def action_view_picking(self):
         self.ensure_one()
@@ -2427,25 +2829,6 @@ class MaintenanceWorkOrder(models.Model):
         }
 
     def action_assign_technician(self):
-        for rec in self:
-            # open wizard (recommended) or assign current user as technician for demo
-            if not rec.technician_id:
-                rec.technician_id = self.env.user.employee_id.id
-            else:
-                raise UserError(_("Technician already assigned. Use form view to change."))
-
-    def action_report_downtime(self):
-        for rec in self:
-            # Open downtime wizard or show notification (demo)
-            return {
-                'type': 'ir.actions.act_window',
-                'name': _('Report Downtime'),
-                'res_model': 'asset.downtime.reason',
-                'view_mode': 'tree,form',
-                'target': 'new',
-                'context': {'default_asset_id': rec.asset_id.id}
-            }
-    def action_assign_technician(self):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Assign Technician',
@@ -2454,6 +2837,17 @@ class MaintenanceWorkOrder(models.Model):
             'target': 'new',
             'context': {'default_workorder_id': self.id}
         }
+
+    def action_report_downtime(self):
+        for rec in self:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Report Downtime'),
+                'res_model': 'asset.downtime.reason',
+                'view_mode': 'tree,form',
+                'target': 'new',
+                'context': {'default_asset_id': rec.asset_id.id}
+            }
 
 --- File: models/product.py ---
 # -*- coding: utf-8 -*-
@@ -2475,203 +2869,6 @@ class ProductProduct(models.Model):
         for record in self:
             record.service_policy = False
             record.service_tracking = 'no'
-
---- File: models/maintenance_request.py ---
-# /home/ranjith/odoo_projects/odoo17/addons/facilities_management/models/maintenance_request.py
-
-from odoo import fields, models, api
-from odoo.exceptions import UserError
-from datetime import datetime
-
-
-class CustomMaintenanceRequestExtensionClass(models.Model): # Keep this unique Python class name
-    _inherit = ['maintenance.request', 'mail.thread', 'mail.activity.mixin']
-    # ADD THIS LINE EXPLICITLY
-    _name = 'maintenance.request' # <--- EXPLICITLY SET _name to the model you are extending
-    _description = 'Maintenance Request Extension'
-
-
-    # Keep all your other fields and methods the same as they were.
-    # ... (all your fields and methods) ...
-    name = fields.Char(string="Request Title", required=True)
-    description = fields.Text(string="Description of the issue")
-    requestor_id = fields.Many2one(
-        'res.partner', string="Requested By",
-        default=lambda self: self.env.user.partner_id.id, required=True
-    )
-    facility_id = fields.Many2one(
-        'facilities.facility', string="Facility", required=True,
-        ondelete='restrict'
-    )
-    asset_id = fields.Many2one(
-        'facilities.asset', string="Asset",
-        domain="[('facility_id', '=', facility_id)]", ondelete='restrict'
-    )
-    category_id = fields.Many2one(
-        'maintenance.request.category', string="Category",
-        ondelete='set null'
-    )
-    date_requested = fields.Datetime(
-        string="Request Date", default=fields.Datetime.now, readonly=True
-    )
-    priority = fields.Selection([
-        ('0', 'Low'),
-        ('1', 'Normal'),
-        ('2', 'High'),
-        ('3', 'Urgent')
-    ], string="Priority", default='1', tracking=True)
-
-    assigned_to_id = fields.Many2one(
-        'hr.employee', string="Assigned To", tracking=True,
-        domain="[('work_email', '!=', False)]",
-        help="The individual technician assigned to this request."
-    )
-
-    maintenance_team_id = fields.Many2one(
-        'maintenance.team', string="Maintenance Team", tracking=True,
-        ondelete='set null',
-        required=False,
-        help="The team assigned to handle this maintenance request."
-    )
-
-    status = fields.Selection([
-        ('new', 'New'),
-        ('assigned', 'Assigned'),
-        ('in_progress', 'In Progress'),
-        ('resolved', 'Resolved'),
-        ('closed', 'Closed'),
-        ('cancelled', 'Cancelled')
-    ], string="Status", default='new', tracking=True)
-
-    date_closed = fields.Datetime(string="Close Date")
-    workorder_id = fields.Many2one(
-        'maintenance.workorder', string="Related Work Order", copy=False,
-        help="Work Order created for this request."
-    )
-
-    stage_id = fields.Many2one(
-        'maintenance.request.stage', string='Stage',
-        compute='_compute_stage_id', store=True, readonly=True,
-        help="Technical field for compatibility with standard Odoo maintenance module."
-    )
-
-    @api.depends('status')
-    def _compute_stage_id(self):
-        for rec in self:
-            rec.stage_id = False # Default to False
-            if rec.status == 'new':
-                rec.stage_id = self.env.ref('maintenance.stage_0', raise_if_not_found=False)
-            elif rec.status == 'assigned' or rec.status == 'in_progress':
-                rec.stage_id = self.env.ref('maintenance.stage_1', raise_if_not_found=False)
-            elif rec.status == 'resolved':
-                rec.stage_id = self.env.ref('maintenance.stage_2', raise_if_not_found=False)
-            elif rec.status in ['closed', 'cancelled']:
-                rec.stage_id = self.env.ref('maintenance.stage_3', raise_if_not_found=False)
-
-    @api.onchange('facility_id')
-    def _onchange_facility_id(self):
-        if self.facility_id:
-            if self.asset_id and self.asset_id.facility_id != self.facility_id:
-                self.asset_id = False
-        else:
-            self.asset_id = False
-
-    @api.onchange('maintenance_team_id')
-    def _onchange_maintenance_team_id(self):
-        if self.maintenance_team_id and self.assigned_to_id and \
-                self.assigned_to_id not in self.maintenance_team_id.member_ids and \
-                self.assigned_to_id != self.maintenance_team_id.leader_id:
-            self.assigned_to_id = False
-
-    def action_create_workorder(self):
-        self.ensure_one()
-        if self.workorder_id:
-            raise UserError("A work order already exists for this request.")
-
-        workorder_vals = {
-            'request_id': self.id,
-            'name': self.env['ir.sequence'].next_by_code('maintenance.workorder') or 'New',
-            'asset_id': self.asset_id.id,
-            'schedule_id': False,
-            'technician_id': self.assigned_to_id.id if self.assigned_to_id else False,
-            'maintenance_team_id': self.maintenance_team_id.id if self.maintenance_team_id else False,
-            'description': self.description,
-            'status': 'in_progress',
-        }
-        workorder = self.env['maintenance.workorder'].create(workorder_vals)
-        self.workorder_id = workorder.id
-        self.status = 'in_progress'
-        return {
-            'name': 'Work Order',
-            'view_mode': 'form',
-            'res_model': 'maintenance.workorder',
-            'res_id': workorder.id,
-            'type': 'ir.actions.act_window',
-            'target': 'current',
-        }
-
-    def action_view_workorder(self):
-        self.ensure_one()
-        return {
-            'name': 'Related Work Order',
-            'view_mode': 'form',
-            'res_model': 'maintenance.workorder',
-            'res_id': self.workorder_id.id,
-            'type': 'ir.actions.act_window',
-            'target': 'current',
-        }
-
-    def action_set_assigned(self):
-        self.ensure_one()
-        if self.status == 'new':
-            self.status = 'assigned'
-
-    def action_set_in_progress(self):
-        self.ensure_one()
-        if self.status in ['new', 'assigned']:
-            self.status = 'in_progress'
-
-    def action_set_resolved(self):
-        self.ensure_one()
-        if self.status in ['new', 'assigned', 'in_progress']:
-            self.status = 'resolved'
-
-    def action_set_closed(self):
-        self.ensure_one()
-        if self.status == 'resolved':
-            self.status = 'closed'
-            self.date_closed = fields.Datetime.now()
-
-    def action_set_cancelled(self):
-        self.ensure_one()
-        if self.status not in ['resolved', 'closed']:
-            self.status = 'cancelled'
-
-    @api.model
-    def create(self, vals):
-        if vals.get('name', 'New') == 'New':
-            vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.request') or 'New'
-        return super().create(vals)
-
-    def write(self, vals):
-        if 'status' in vals and vals['status'] == 'closed' and not vals.get('date_closed'):
-            vals['date_closed'] = fields.Datetime.now()
-        return super().write(vals)
-
-    def unlink(self):
-        for rec in self:
-            if rec.workorder_id:
-                raise UserError(
-                    "Cannot delete a request that has an associated work order. Please delete the work order first.")
-        return super().unlink()
-
-
-class MaintenanceRequestCategory(models.Model):
-    _name = 'maintenance.request.category'
-    _description = 'Maintenance Request Category'
-
-    name = fields.Char(string="Category Name", required=True)
-    description = fields.Text(string="Description")
 
 --- File: models/predictive_maintenance.py ---
 # models/predictive_maintenance.py
@@ -2730,12 +2927,13 @@ access_predictive_maintenance_user,predictive.maintenance.user,model_predictive_
 access_maintenance_workorder_sla_user,maintenance.workorder.sla.user,model_maintenance_workorder_sla,base.group_user,1,1,1,1
 access_maintenance_resource_utilization_user,maintenance.resource.utilization.user,model_maintenance_resource_utilization,base.group_user,1,1,1,1
 access_maintenance_sla_analytics_user,maintenance.sla.analytics.user,model_maintenance_sla_analytics,base.group_user,1,1,1,1
-access_maintenance_request_stage_user,maintenance.request.stage.user,model_maintenance_request_stage,base.group_user,1,1,1,1
 access_facilities_asset_performance_user,facilities.asset.performance.user,model_facilities_asset_performance,base.group_user,1,1,1,1
 access_asset_downtime_reason_user,asset.downtime.reason.user,model_asset_downtime_reason,base.group_user,1,1,1,1
 access_maintenance_job_plan_section_user,maintenance.job.plan.section user,model_maintenance_job_plan_section,base.group_user,1,1,1,1
 access_maintenance_workorder_section_user,maintenance.workorder.section user,model_maintenance_workorder_section,base.group_user,1,1,1,1
 access_assign_technician_wizard_user,assign.technician.wizard.user,model_assign_technician_wizard,base.group_user,1,1,1,1
+access_maintenance_workorder_permit_user,maintenance.workorder.permit user,model_maintenance_workorder_permit,base.group_user,1,1,1,1
+access_maintenance_workorder_permit_manager,maintenance.workorder.permit manager,model_maintenance_workorder_permit,base.group_system,1,1,1,1
 
 --- File: security/facility_management_security.xml ---
 <?xml version="1.0"?>
@@ -2921,26 +3119,45 @@ from . import assign_technician_wizard
             <field name="interval_type">days</field> <!-- Changed to days for daily check -->
             <field name="numbercall">-1</field> <!-- Unlimited calls -->
         </record>
+
+        <record id="ir_cron_auto_escalate_workorders" model="ir.cron">
+            <field name="name">Auto Escalate Maintenance Work Orders</field>
+            <field name="model_id" ref="model_maintenance_workorder"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_auto_escalate_workorders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field> <!-- Check every hour -->
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>
 
 --- File: views/sla_views.xml ---
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- SLA Configuration Views -->
+    <!-- SLA Configuration: Tree View -->
     <record id="view_maintenance_workorder_sla_tree" model="ir.ui.view">
         <field name="name">maintenance.workorder.sla.tree</field>
         <field name="model">maintenance.workorder.sla</field>
         <field name="arch" type="xml">
             <tree>
+                <field name="sequence"/>
                 <field name="name"/>
                 <field name="priority"/>
+                <field name="facility_id"/>
+                <field name="location"/>
+                <field name="work_order_type"/>
                 <field name="response_time_hours"/>
                 <field name="resolution_time_hours"/>
+                <field name="warning_threshold"/>
+                <field name="critical_threshold"/>
+                <field name="active"/>
             </tree>
         </field>
     </record>
 
+    <!-- SLA Configuration: Form View -->
     <record id="view_maintenance_workorder_sla_form" model="ir.ui.view">
         <field name="name">maintenance.workorder.sla.form</field>
         <field name="model">maintenance.workorder.sla</field>
@@ -2948,21 +3165,32 @@ from . import assign_technician_wizard
             <form>
                 <sheet>
                     <group>
-                        <group>
-                            <field name="name"/>
-                            <field name="priority"/>
-                        </group>
-                        <group>
-                            <field name="response_time_hours"/>
-                            <field name="resolution_time_hours"/>
-                        </group>
+                        <field name="active"/>
+                        <field name="sequence"/>
+                        <field name="name"/>
+                    </group>
+                    <group string="SLA Criteria">
+                        <field name="priority"/>
+                        <field name="facility_id"/>
+                        <field name="location"/>
+                        <field name="work_order_type"/>
+                    </group>
+                    <group string="SLA Targets">
+                        <field name="response_time_hours"/>
+                        <field name="resolution_time_hours"/>
+                    </group>
+                    <group string="Thresholds &amp; Escalation">
+                        <field name="warning_threshold"/>
+                        <field name="critical_threshold"/>
+                        <field name="escalation_enabled"/>
+                        <field name="escalation_manager_id"/>
                     </group>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- SLA Analytics Views -->
+    <!-- SLA Analytics Views (unchanged, for reference) -->
     <record id="view_maintenance_sla_analytics_tree" model="ir.ui.view">
         <field name="name">maintenance.sla.analytics.tree</field>
         <field name="model">maintenance.sla.analytics</field>
@@ -3004,7 +3232,6 @@ from . import assign_technician_wizard
               parent="facilities_management.menu_maintenance"
               action="action_maintenance_sla_analytics"
               sequence="65"/>
-
 </odoo>
 
 --- File: views/assign_technician_wizard_view.xml ---
@@ -3478,171 +3705,6 @@ from . import assign_technician_wizard
         </field>
     </record>
 
-</odoo>
-
---- File: views/maintenance_request_views.xml ---
-<?xml version="1.0" encoding="UTF-8"?>
-<odoo>
-    <record id="view_maintenance_request_category_tree" model="ir.ui.view">
-        <field name="name">maintenance.request.category.tree</field>
-        <field name="model">maintenance.request.category</field>
-        <field name="arch" type="xml">
-            <tree string="Maintenance Request Categories">
-                <field name="name"/>
-                <field name="description"/>
-            </tree>
-        </field>
-    </record>
-
-    <record id="view_maintenance_request_category_form" model="ir.ui.view">
-        <field name="name">maintenance.request.category.form</field>
-        <field name="model">maintenance.request.category</field>
-        <field name="arch" type="xml">
-            <form string="Maintenance Request Category">
-                <sheet>
-                    <group>
-                        <field name="name"/>
-                        <field name="description"/>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="action_maintenance_request_category" model="ir.actions.act_window">
-        <field name="name">Request Categories</field>
-        <field name="res_model">maintenance.request.category</field>
-        <field name="view_mode">tree,form</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Define categories for your maintenance requests.
-            </p>
-        </field>
-    </record>
-
-    <record id="view_maintenance_request_tree" model="ir.ui.view">
-        <field name="name">maintenance.request.tree</field>
-        <field name="model">maintenance.request</field>
-        <field name="arch" type="xml">
-            <tree string="Maintenance Requests" decoration-success="status=='resolved'" decoration-info="status=='in_progress'" decoration-danger="priority=='3' and status not in ('resolved', 'closed', 'cancelled')">
-                <field name="name"/>
-                <field name="requestor_id"/>
-                <field name="facility_id"/>
-                <field name="asset_id"/>
-                <field name="category_id"/>
-                <field name="priority" widget="priority"/>
-                <field name="date_requested"/>
-                <field name="assigned_to_id"/>
-                <field name="status" widget="badge"/>
-                <field name="date_closed"/>
-            </tree>
-        </field>
-    </record>
-
-    <record id="view_maintenance_request_form" model="ir.ui.view">
-        <field name="name">maintenance.request.form</field>
-        <field name="model">maintenance.request</field>
-        <field name="arch" type="xml">
-            <form string="Maintenance Request">
-                <header>
-                    <button name="action_create_workorder" type="object" string="Create Work Order" class="oe_highlight" attrs="{'invisible': [('workorder_id', '!=', False)]}"/>
-                    <button name="action_set_assigned" type="object" string="Mark Assigned" attrs="{'invisible': [('status', 'not in', ['new'])]}"/>
-                    <button name="action_set_in_progress" type="object" string="Mark In Progress" attrs="{'invisible': [('status', 'not in', ['new', 'assigned'])]}"/>
-                    <button name="action_set_resolved" type="object" string="Mark Resolved" attrs="{'invisible': [('status', 'not in', ['new', 'assigned', 'in_progress'])]}"/>
-                    <button name="action_set_closed" type="object" string="Mark Closed" attrs="{'invisible': [('status', 'not in', ['resolved'])]}"/>
-                    <button name="action_set_cancelled" type="object" string="Mark Cancelled" attrs="{'invisible': [('status', 'in', ['resolved', 'closed', 'cancelled'])]}"/>
-                    <field name="status" widget="statusbar" statusbar_visible="new,assigned,in_progress,resolved,closed"/>
-                </header>
-                <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_view_workorder" type="object" class="oe_stat_button" icon="fa-wrench"
-                                attrs="{'invisible': [('workorder_id', '=', False)]}">
-                            <field name="workorder_id" invisible="1"/>
-                            <div class="o_field_widget o_stat_info">
-                                <span class="o_stat_text">Work Order</span>
-                            </div>
-                        </button>
-                    </div>
-                    <group>
-                        <group>
-                            <field name="name"/>
-                            <field name="requestor_id"/>
-                            <field name="facility_id"/>
-                            <field name="asset_id" domain="[('facility_id', '=', facility_id)]"/>
-                        </group>
-                        <group>
-                            <field name="category_id"/>
-                            <field name="priority" widget="priority"/>
-                            <field name="date_requested"/>
-                            <field name="assigned_to_id"/>
-                            <field name="date_closed"/>
-                        </group>
-                    </group>
-                    <notebook>
-                        <page string="Description" name="description">
-                            <field name="description"/>
-                        </page>
-                        <page string="Other Info" name="other_info">
-                            <group>
-                                <field name="company_id" groups="base.group_multi_company"/>
-                                </group>
-                        </page>
-                    </notebook>
-                </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids" widget="mail_followers"/>
-                    <field name="activity_ids" widget="mail_activity"/>
-                    <field name="message_ids" widget="mail_thread"/>
-                </div>
-            </form>
-        </field>
-    </record>
-
-    <record id="view_maintenance_request_search" model="ir.ui.view">
-        <field name="name">maintenance.request.search</field>
-        <field name="model">maintenance.request</field>
-        <field name="arch" type="xml">
-            <search string="Maintenance Requests">
-                <field name="name" string="Request"/>
-                <field name="requestor_id"/>
-                <field name="facility_id"/>
-                <field name="asset_id"/>
-                <field name="category_id"/>
-                <field name="assigned_to_id"/>
-                <filter name="status_new" string="New" domain="[('status', '=', 'new')]"/>
-                <filter name="status_assigned" string="Assigned" domain="[('status', '=', 'assigned')]"/>
-                <filter name="status_in_progress" string="In Progress" domain="[('status', '=', 'in_progress')]"/>
-                <filter name="status_resolved" string="Resolved" domain="[('status', '=', 'resolved')]"/>
-                <filter name="status_closed" string="Closed" domain="[('status', '=', 'closed')]"/>
-                <filter name="status_cancelled" string="Cancelled" domain="[('status', '=', 'cancelled')]"/>
-                <filter name="my_requests" string="My Requests" domain="[('requestor_id.user_id', '=', uid)]"/>
-                <filter name="assigned_to_me" string="Assigned to Me" domain="[('assigned_to_id.user_id', '=', uid)]"/>
-                <group expand="0" string="Group By">
-                    <filter name="groupby_status" string="Status" context="{'group_by': 'status'}"/>
-                    <filter name="groupby_facility" string="Facility" context="{'group_by': 'facility_id'}"/>
-                    <filter name="groupby_asset" string="Asset" context="{'group_by': 'asset_id'}"/>
-                    <filter name="groupby_category" string="Category" context="{'group_by': 'category_id'}"/>
-                    <filter name="groupby_requestor" string="Requestor" context="{'group_by': 'requestor_id'}"/>
-                    <filter name="groupby_assigned_to" string="Assigned To" context="{'group_by': 'assigned_to_id'}"/>
-                    <filter name="groupby_priority" string="Priority" context="{'group_by': 'priority'}"/>
-                    <filter name="groupby_month" string="Request Month" context="{'group_by': 'date_requested:quarter'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-    <record id="action_maintenance_request" model="ir.actions.act_window">
-        <field name="name">Maintenance Requests</field>
-        <field name="res_model">maintenance.request</field>
-        <field name="view_mode">tree,form</field>
-        <field name="context">{'search_default_status_new': 1}</field> <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create a new maintenance request.
-            </p><p>
-                Track issues, assign technicians, and manage the resolution process.
-            </p>
-        </field>
-    </record>
 </odoo>
 
 --- File: views/floor_views.xml ---
@@ -4209,7 +4271,8 @@ from . import assign_technician_wizard
         <field name="view_mode">kanban,tree,form,calendar</field>
         <field name="context">{
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first facility asset!
@@ -4288,7 +4351,8 @@ from . import assign_technician_wizard
         <field name="context">{
             'search_default_group_by_category': 1,
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <record id="action_assets_by_state" model="ir.actions.act_window">
@@ -4297,19 +4361,21 @@ from . import assign_technician_wizard
         <field name="view_mode">kanban,tree</field>
         <field name="context">{
             'search_default_group_by_condition': 1
-        }</field>
+            }
+        </field>
     </record>
 
-<record id="action_warranty_monitoring" model="ir.actions.act_window">
-    <field name="name">Warranty Monitoring</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">calendar,tree,kanban</field>
-    <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
-    <field name="context">{
-        'search_default_has_warranty': 1
-    }</field>
-    <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
-</record>
+    <record id="action_warranty_monitoring" model="ir.actions.act_window">
+        <field name="name">Warranty Monitoring</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,kanban</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
+        <field name="context">{
+            'search_default_has_warranty': 1
+            }
+        </field>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+    </record>
 
     <record id="action_maintenance_due" model="ir.actions.act_window">
         <field name="name">Maintenance Due</field>
@@ -4370,7 +4436,8 @@ from . import assign_technician_wizard
         <field name="view_mode">kanban,graph,pivot</field>
         <field name="context">{
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Asset Value Analysis Action -->
@@ -4381,7 +4448,8 @@ from . import assign_technician_wizard
         <field name="context">{
             'search_default_group_by_category': 1,
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Maintenance Calendar Action -->
@@ -4406,7 +4474,8 @@ from . import assign_technician_wizard
         <field name="view_mode">graph,pivot,tree</field>
         <field name="context">{
             'search_default_group_by_state': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Asset Reports Actions -->
@@ -4416,7 +4485,8 @@ from . import assign_technician_wizard
         <field name="view_mode">graph,pivot,tree</field>
         <field name="context">{
             'search_default_group_by_category': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Facility Reports Action -->
@@ -4486,69 +4556,58 @@ from . import assign_technician_wizard
         </field>
     </record>
 
-    <!-- Work Order Types Action -->
-    <record id="action_maintenance_workorder_type" model="ir.actions.act_window">
-        <field name="name">Work Order Types</field>
-        <field name="res_model">maintenance.workorder.type</field>
-        <field name="view_mode">tree,form</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create work order types!
-            </p>
-            <p>
-                Categorize your maintenance work orders by type.
-            </p>
-        </field>
-    </record>
-
-    <record id="action_asset_performance_dashboard" model="ir.actions.act_window">
+        <record id="action_asset_performance_dashboard" model="ir.actions.act_window">
         <field name="name">Performance Dashboard</field>
         <field name="res_model">facilities.asset.performance</field>
         <field name="view_mode">graph,pivot,tree</field>
         <field name="context">{
             'search_default_last_30_days': 1,
             'search_default_group_by_asset': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <record id="action_asset" model="ir.actions.act_window">
-    <field name="name">Assets</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">kanban,tree,form,calendar</field>
-    <field name="context">{
-        'search_default_active': 1
-    }</field>
-    <field name="help" type="html">
-        <p class="o_view_nocontent_smiling_face">
-            Create your first facility asset!
-        </p>
-        <p>
-            Manage your facility assets including equipment, furniture, and infrastructure.
-            Use calendar view to track important dates.
-        </p>
-    </field>
-</record>
+        <field name="name">Assets</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="context">{
+            'search_default_active': 1
+            }
+        </field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first facility asset!
+            </p>
+            <p>
+                Manage your facility assets including equipment, furniture, and infrastructure.
+                Use calendar view to track important dates.
+            </p>
+        </field>
+    </record>
 
-<record id="action_assets_overview" model="ir.actions.act_window">
-    <field name="name">Assets Overview</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">kanban,graph,pivot,calendar</field>
-    <field name="context">{
-        'search_default_group_by_category': 1,
-        'search_default_filter_active': 1
-    }</field>
-</record>
+    <record id="action_assets_overview" model="ir.actions.act_window">
+        <field name="name">Assets Overview</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,graph,pivot,calendar</field>
+        <field name="context">{
+            'search_default_group_by_category': 1,
+            'search_default_filter_active': 1
+            }
+        </field>
+    </record>
 
-<record id="action_warranty_monitoring" model="ir.actions.act_window">
-    <field name="name">Warranty Monitoring</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">calendar,tree,kanban</field>
-    <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
-    <field name="context">{
-        'search_default_has_warranty': 1
-    }</field>
-    <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
-</record>
+    <record id="action_warranty_monitoring" model="ir.actions.act_window">
+        <field name="name">Warranty Monitoring</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,kanban</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
+        <field name="context">{
+            'search_default_has_warranty': 1
+            }
+        </field>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+    </record>
 
     <!-- ROOT MENU -->
     <menuitem id="menu_facilities_root"
@@ -4683,10 +4742,10 @@ from . import assign_technician_wizard
               sequence="10"/>
 
     <menuitem id="menu_maintenance_schedule"
-             name="Schedules"
-             parent="menu_maintenance_operations"
-             action="action_maintenance_schedule"
-             sequence="20"/>
+              name="Schedules"
+              parent="menu_maintenance_operations"
+              action="action_maintenance_schedule"
+              sequence="20"/>
 
     <menuitem id="menu_maintenance_calendar_item"
               name="Calendar View"
@@ -4705,12 +4764,6 @@ from . import assign_technician_wizard
               parent="menu_maintenance_planning"
               action="action_maintenance_job_plan"
               sequence="10"/>
-
-    <menuitem id="menu_maintenance_workorder_type_item"
-              name="Work Order Types"
-              parent="menu_maintenance_planning"
-              action="action_maintenance_workorder_type"
-              sequence="20"/>
 
     <!-- Maintenance Analytics -->
     <menuitem id="menu_maintenance_analytics"
@@ -4813,17 +4866,29 @@ from . import assign_technician_wizard
               groups="base.group_system"/>
 
     <menuitem id="menu_asset_calendar_views"
-          name="Calendar Views"
-          parent="menu_asset_analytics"
-          sequence="50"/>
+              name="Calendar Views"
+              parent="menu_asset_analytics"
+              sequence="50"/>
 
-<menuitem id="menu_warranty_calendar_item"
-          name="Warranty Calendar"
-          parent="menu_asset_calendar_views"
-          action="action_asset_warranty_calendar"
-          sequence="10"/>
+    <menuitem id="menu_warranty_calendar_item"
+              name="Warranty Calendar"
+              parent="menu_asset_calendar_views"
+              action="action_asset_warranty_calendar"
+              sequence="10"/>
 
-<menuitem id="menu_purchase_timeline_item" name="Purchase Timeline" parent="menu_asset_calendar_views" action="action_asset_purchase_calendar" sequence="20"/>
+    <menuitem id="menu_purchase_timeline_item" name="Purchase Timeline" parent="menu_asset_calendar_views"
+              action="action_asset_purchase_calendar" sequence="20"/>
+
+    <menuitem id="menu_maintenance_permits"
+              name="Permits"
+              parent="menu_maintenance"
+              sequence="40"/>
+
+    <menuitem id="menu_workorder_permit"
+              name="Work Order Permits"
+              parent="menu_maintenance_permits"
+              action="action_workorder_permit"
+              sequence="10"/>
 
 
 </odoo>
@@ -4947,6 +5012,96 @@ from . import assign_technician_wizard
 
 </odoo>
 
+--- File: views/maintenance_workorder_permit_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Permit Tree View -->
+    <record id="view_workorder_permit_tree" model="ir.ui.view">
+        <field name="name">maintenance.workorder.permit.tree</field>
+        <field name="model">maintenance.workorder.permit</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="permit_type"/>
+                <field name="status"/>
+                <field name="issued_date"/>
+                <field name="expiry_date"/>
+                <field name="requested_by_id"/>
+                <field name="approved_by_id"/>
+                <field name="workorder_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Permit Action Window -->
+    <record id="action_workorder_permit" model="ir.actions.act_window">
+        <field name="name">Work Order Permits</field>
+        <field name="res_model">maintenance.workorder.permit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p>
+                Manage and track permits required for work orders.
+            </p>
+        </field>
+    </record>
+
+    <!-- Permit Form View (Odoo 17 syntax, with statusbar, workflow buttons, and chatter) -->
+    <record id="view_workorder_permit_form" model="ir.ui.view">
+        <field name="name">maintenance.workorder.permit.form</field>
+        <field name="model">maintenance.workorder.permit</field>
+        <field name="arch" type="xml">
+            <form string="Work Order Permit">
+                <header>
+                    <field name="status" widget="statusbar"
+                        statusbar_visible="requested,pending_manager_approval,approved,rejected,expired"
+                        statusbar_colors='{"approved":"green","rejected":"red"}'/>
+
+                    <button name="action_submit_for_approval"
+                            type="object"
+                            string="Send to Facility Manager"
+                            class="oe_highlight"
+                            show="status == 'requested'"/>
+
+                    <button name="action_approve"
+                            type="object"
+                            string="Approve"
+                            class="btn-primary"
+                            show="status == 'pending_manager_approval' and facility_manager_id == uid"/>
+
+                    <button name="action_reject"
+                            type="object"
+                            string="Reject"
+                            class="btn-danger"
+                            show="status == 'pending_manager_approval' and facility_manager_id == uid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="permit_type"/>
+                        <field name="workorder_id"/>
+                        <field name="status"/>
+                        <field name="issued_date"/>
+                        <field name="expiry_date"/>
+                        <field name="requested_by_id"/>
+                        <field name="approved_by_id"/>
+                        <!-- Do NOT use required here; enforce in Python only -->
+                        <field name="rejected_reason"
+                               placeholder="Provide rejection reason if rejecting"/>
+                        <field name="facility_manager_id" readonly="1"/>
+                        <field name="notes"/>
+                        <field name="attachment_ids" widget="many2many_binary"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+</odoo>
+
 --- File: views/maintenance_workorder_part_line_views.xml ---
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
@@ -4986,24 +5141,45 @@ from . import assign_technician_wizard
 </odoo>
 
 --- File: views/maintenance_workorder_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <!-- Workorder Form View -->
     <record id="view_workorder_form" model="ir.ui.view">
         <field name="name">maintenance.workorder.form</field>
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <field name="status" widget="statusbar" nolabel="1"/>
+                    <field name="approval_state" widget="statusbar"
+                        statusbar_visible="draft,submitted,supervisor,manager,approved,in_progress,done,refused,escalated"
+                        statusbar_colors='{"refused":"red","escalated":"orange","done":"green"}'/>
+                    <field name="status" invisible="1"/>
+                    <field name="all_tasks_completed" invisible="1"/>
+                    <button name="action_submit_for_approval" type="object"
+                        string="Submit for Approval" class="oe_highlight"
+                        invisible="approval_state != 'draft'"/>
+                    <button name="action_supervisor_approve" type="object"
+                        string="Supervisor Approve" class="oe_highlight"
+                        invisible="approval_state != 'submitted'"/>
+                    <button name="action_manager_approve" type="object"
+                        string="Manager Approve" class="oe_highlight"
+                        invisible="approval_state != 'supervisor'"/>
+                    <button name="action_fully_approve" type="object"
+                        string="Fully Approve" class="oe_highlight"
+                        invisible="approval_state != 'manager'"/>
+                    <button name="action_refuse" type="object"
+                        string="Refuse" class="btn-danger"
+                        invisible="approval_state == 'refused' or approval_state == 'done' or approval_state == 'cancelled'"/>
                     <button name="action_start_progress" type="object" string="Start Progress"
-                        invisible="status != 'draft'" class="oe_highlight"/>
+                        invisible="approval_state != 'approved'" class="oe_highlight"/>
                     <button name="action_complete" type="object" string="Mark as Completed"
-                        invisible="['|', ('status', '!=', 'in_progress'), ('all_tasks_completed', '=', False)]"
+                        invisible="status != 'in_progress' or not all_tasks_completed"
                         class="oe_highlight"
                         confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked."/>
                     <button name="action_cancel" type="object" string="Cancel"
-                        invisible="status in ('done', 'cancelled')"/>
+                        invisible="status == 'done' or status == 'cancelled'"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
-                        invisible="status not in ('done', 'cancelled')"
+                        invisible="status == 'draft'"
                         confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
                 </header>
                 <sheet>
@@ -5020,7 +5196,12 @@ from . import assign_technician_wizard
                     <group>
                         <group string="Work Order Details">
                             <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="facility_id" readonly="1"/>
+                            <field name="room_id" readonly="1"/>
+                            <field name="building_id" readonly="1"/>
+                            <field name="floor_id" readonly="1"/>
                             <field name="work_order_type"/>
+                            <field name="priority"/>
                             <field name="schedule_id"
                                 domain="[('active','=',True), ('asset_id','=',asset_id)]"
                                 context="{'default_asset_id': asset_id}"/>
@@ -5028,16 +5209,35 @@ from . import assign_technician_wizard
                                 invisible="workorder_task_ids != False"
                                 readonly="status != 'draft'"
                                 help="Select a Job Plan to automatically populate tasks for this work order."/>
+                            <field name="service_type"/>
+                            <field name="maintenance_team_id"/>
                         </group>
                         <group string="Personnel &amp; Scheduled Dates">
                             <field name="technician_id"/>
+                            <field name="supervisor_id" readonly="1"/>
+                            <field name="manager_id" readonly="1"/>
                             <field name="start_date"/>
                             <field name="end_date"/>
                         </group>
                     </group>
+                    <group string="Approval Details" colspan="2">
+                        <field name="submitted_by_id" readonly="1"/>
+                        <field name="approved_by_id" readonly="1"/>
+                        <field name="approval_request_date" readonly="1"/>
+                        <field name="escalation_deadline" readonly="1"/>
+                        <field name="escalation_to_id" readonly="1"/>
+                        <field name="escalation_count" readonly="1"/>
+                    </group>
                     <group string="Actual Work Dates">
                         <field name="actual_start_date"/>
                         <field name="actual_end_date"/>
+                    </group>
+                    <group string="SLA Information" colspan="2">
+                        <field name="sla_id"/>
+                        <field name="sla_response_deadline" readonly="1"/>
+                        <field name="sla_resolution_deadline" readonly="1"/>
+                        <field name="sla_response_status" widget="badge"/>
+                        <field name="sla_resolution_status" widget="badge"/>
                     </group>
                     <notebook>
                         <page string="Description">
@@ -5092,6 +5292,19 @@ from . import assign_technician_wizard
                                 </tree>
                             </field>
                         </page>
+                        <!-- PERMITS TAB -->
+                        <page string="Permits">
+                            <field name="permit_ids">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="permit_type"/>
+                                    <field name="status"/>
+                                    <field name="issued_date"/>
+                                    <field name="expiry_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <!-- END PERMITS TAB -->
                     </notebook>
                 </sheet>
                 <div class="oe_chatter">
@@ -5104,22 +5317,36 @@ from . import assign_technician_wizard
         </field>
     </record>
 
+    <!-- Workorder Tree View -->
     <record id="view_maintenance_workorder_tree" model="ir.ui.view">
         <field name="name">maintenance.workorder.tree</field>
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
-            <tree decoration-success="status=='done'" decoration-danger="status=='cancelled'" decoration-info="status=='in_progress'">
+            <tree decoration-success="status=='done'"
+                  decoration-danger="status=='cancelled'"
+                  decoration-info="status=='in_progress'">
+                <field name="status" invisible="1"/>
                 <field name="name"/>
-                <field name="status" widget="statusbar"/>
                 <field name="asset_id"/>
+                <field name="facility_id"/>
+                <field name="room_id"/>
+                <field name="building_id"/>
+                <field name="floor_id"/>
+                <field name="priority"/>
+                <field name="service_type"/>
+                <field name="maintenance_team_id"/>
                 <field name="technician_id"/>
+                <field name="supervisor_id"/>
+                <field name="manager_id"/>
+                <field name="sla_id"/>
+                <field name="sla_response_status" widget="badge"/>
+                <field name="sla_resolution_status" widget="badge"/>
                 <button name="action_start_progress" string="Start Work" type="object" icon="fa-play"/>
                 <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
                 <button name="action_report_downtime" string="Report Downtime" type="object" icon="fa-clock-o"/>
             </tree>
         </field>
     </record>
-
 </odoo>
 
 --- File: views/asset_category_views.xml ---
@@ -5159,6 +5386,53 @@ from . import assign_technician_wizard
     </record>
 </odoo>
 
+
+--- File: views/maintenance_team_views.xml ---
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Maintenance Team List View -->
+    <record id="view_maintenance_team_tree" model="ir.ui.view">
+        <field name="name">maintenance.team.tree</field>
+        <field name="model">maintenance.team</field>
+        <field name="arch" type="xml">
+            <tree string="Teams">
+                <field name="name"/>
+                <field name="service_type"/>
+                <field name="leader_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Maintenance Team Form View -->
+    <record id="view_maintenance_team_form" model="ir.ui.view">
+        <field name="name">maintenance.team.form</field>
+        <field name="model">maintenance.team</field>
+        <field name="arch" type="xml">
+            <form string="Team">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="service_type"/>
+                        <field name="leader_id"/>
+                        <field name="member_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Teams -->
+    <record id="action_maintenance_team" model="ir.actions.act_window">
+        <field name="name">Teams</field>
+        <field name="res_model">maintenance.team</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create and manage maintenance teams and departments.
+            </p>
+        </field>
+    </record>
+</odoo>
 
 --- File: views/maintenance_job_plan_views.xml ---
 <odoo>
@@ -5371,7 +5645,7 @@ from . import assign_technician_wizard
 --- File: views/facility_asset_views.xml ---
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Asset Tree View (no QR code image) -->
+    <!-- Asset Tree View -->
     <record id="view_facilities_asset_tree" model="ir.ui.view">
         <field name="name">facilities.asset.tree</field>
         <field name="model">facilities.asset</field>
@@ -5382,22 +5656,35 @@ from . import assign_technician_wizard
                 <field name="barcode"/>
                 <field name="facility_id"/>
                 <field name="category_id"/>
-                <field name="location"/>
+                <field name="room_id"/>
+                <field name="building_id"/>
+                <field name="floor_id"/>
                 <field name="condition"/>
+                <field name="state"/>
                 <field name="responsible_id"/>
                 <field name="active"/>
             </tree>
         </field>
     </record>
 
-    <!-- Asset Form View (button removed from header) -->
+    <!-- Asset Form View -->
     <record id="view_facility_asset_form" model="ir.ui.view">
         <field name="name">facilities.asset.form</field>
         <field name="model">facilities.asset</field>
         <field name="arch" type="xml">
             <form string="Asset">
                 <header>
-                    <field name="condition" widget="statusbar" nolabel="1"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,active,maintenance,disposed"
+                           statusbar_colors='{"draft":"gray","active":"blue","maintenance":"orange","disposed":"red"}'/>
+                    <button name="action_activate" string="Activate" type="object"
+                            invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="action_set_maintenance" string="Set to Maintenance" type="object"
+                            invisible="state != 'active'" class="oe_highlight"/>
+                    <button name="action_set_active" string="Set Active" type="object"
+                            invisible="state != 'maintenance'" class="oe_highlight"/>
+                    <button name="action_dispose" string="Dispose" type="object"
+                            invisible="state == 'disposed'" class="oe_highlight"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -5426,12 +5713,13 @@ from . import assign_technician_wizard
                         </group>
                         <group string="Location &amp; Responsibility">
                             <field name="facility_id"/>
-                            <field name="location"/>
+                            <field name="room_id"/>
+                            <field name="building_id" readonly="1"/>
+                            <field name="floor_id" readonly="1"/>
                             <field name="responsible_id"/>
                             <field name="department_id"/>
                         </group>
                     </group>
-
                     <notebook>
                         <page string="Acquisition &amp; Lifecycle" name="acquisition_lifecycle">
                             <group>
@@ -5448,7 +5736,6 @@ from . import assign_technician_wizard
                                 </group>
                             </group>
                         </page>
-
                         <page string="Manufacturer &amp; Service" name="manufacturer_service">
                             <group>
                                 <group>
@@ -5460,7 +5747,6 @@ from . import assign_technician_wizard
                                 </group>
                             </group>
                         </page>
-
                         <page string="Depreciation Records" name="depreciation_records">
                             <field name="depreciation_ids">
                                 <tree>
@@ -5472,7 +5758,6 @@ from . import assign_technician_wizard
                                 </tree>
                             </field>
                         </page>
-
                         <page string="Notes &amp; Documents" name="notes_documents">
                             <field name="notes"/>
                             <separator string="Documents"/>
@@ -5490,7 +5775,7 @@ from . import assign_technician_wizard
         </field>
     </record>
 
-    <!-- Asset Form Inherit for create attribute, if needed -->
+    <!-- Asset Form Inherit for create attribute -->
     <record id="view_facility_asset_form_inherit" model="ir.ui.view">
         <field name="name">facilities.asset.form.inherit</field>
         <field name="model">facilities.asset</field>
@@ -5515,7 +5800,9 @@ from . import assign_technician_wizard
                 <field name="asset_tag"/>
                 <field name="category_id"/>
                 <field name="facility_id"/>
-                <field name="location"/>
+                <field name="room_id"/>
+                <field name="building_id"/>
+                <field name="floor_id"/>
                 <field name="responsible_id"/>
                 <field name="manufacturer_id"/>
                 <field name="model_number"/>
@@ -5524,6 +5811,9 @@ from . import assign_technician_wizard
                 <group expand="0" string="Group By">
                     <filter string="Category" name="groupby_category" context="{'group_by':'category_id'}"/>
                     <filter string="Project" name="groupby_project" context="{'group_by':'facility_id'}"/>
+                    <filter string="Room" name="groupby_room" context="{'group_by':'room_id'}"/>
+                    <filter string="Building" name="groupby_building" context="{'group_by':'building_id'}"/>
+                    <filter string="Floor" name="groupby_floor" context="{'group_by':'floor_id'}"/>
                     <filter string="Condition" name="groupby_condition" context="{'group_by':'condition'}"/>
                     <filter string="Responsible Person" name="groupby_responsible" context="{'group_by':'responsible_id'}"/>
                     <filter string="Manufacturer" name="groupby_manufacturer" context="{'group_by':'manufacturer_id'}"/>
@@ -5538,47 +5828,28 @@ from . import assign_technician_wizard
     <record id="action_facilities_asset" model="ir.actions.act_window">
         <field name="name">Facility Assets</field>
         <field name="res_model">facilities.asset</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,calendar</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first facility asset!
+            </p>
+            <p>
+                Manage your facility assets including equipment, furniture, and infrastructure.
+                Use calendar view to track important dates like warranty expiration.
+            </p>
+        </field>
     </record>
 
     <!-- Asset Dashboard Action -->
     <record id="action_asset_dashboard" model="ir.actions.act_window">
         <field name="name">Asset Dashboard</field>
         <field name="res_model">facilities.asset</field>
-        <field name="view_mode">graph,pivot</field>
+        <field name="view_mode">graph,pivot,calendar</field>
         <field name="domain">[]</field>
         <field name="context">{}</field>
         <field name="target">current</field>
         <field name="binding_model_id" eval="False"/>
     </record>
-
-    <!-- Update existing action to include calendar view -->
-<record id="action_facilities_asset" model="ir.actions.act_window">
-    <field name="name">Facility Assets</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">tree,form,calendar</field>
-    <field name="help" type="html">
-        <p class="o_view_nocontent_smiling_face">
-            Create your first facility asset!
-        </p>
-        <p>
-            Manage your facility assets including equipment, furniture, and infrastructure.
-            Use calendar view to track important dates like warranty expiration.
-        </p>
-    </field>
-</record>
-
-<!-- Update existing asset dashboard action -->
-<record id="action_asset_dashboard" model="ir.actions.act_window">
-    <field name="name">Asset Dashboard</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">graph,pivot,calendar</field>
-    <field name="domain">[]</field>
-    <field name="context">{}</field>
-    <field name="target">current</field>
-    <field name="binding_model_id" eval="False"/>
-</record>
-
 </odoo>
 
 --- File: views/asset_calendar_views.xml ---

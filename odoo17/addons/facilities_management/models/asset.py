@@ -9,7 +9,6 @@ try:
 except ImportError:
     qrcode = None
 
-
 class FacilityAsset(models.Model):
     _name = 'facilities.asset'
     _description = 'Facility Asset'
@@ -17,14 +16,18 @@ class FacilityAsset(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'name, asset_code'
 
-    # Basic Information
     name = fields.Char('Asset Name', required=True, tracking=True)
     asset_tag = fields.Char(string="Asset Tag", tracking=True)
     serial_number = fields.Char(string="Serial Number", tracking=True)
+    location = fields.Char(string="Location", compute='_compute_location')
     facility_id = fields.Many2one('facilities.facility', string='Project', required=True, tracking=True)
     asset_code = fields.Char('Asset Code', size=20, tracking=True, copy=False)
 
-    # State Management
+    # Timeline History Events for UI
+    history_events = fields.Json(string="Asset History Events", compute='_compute_history_events', store=False)
+    history_events_display = fields.Text(string="Asset History Timeline", compute='_compute_history_events_display', store=False)
+    history_events_html = fields.Html(string="Asset History Timeline", compute='_compute_history_events_html', store=False)
+
     state = fields.Selection([
         ('draft', 'Draft'),
         ('active', 'Active'),
@@ -32,7 +35,6 @@ class FacilityAsset(models.Model):
         ('disposed', 'Disposed'),
     ], string='State', default='draft', tracking=True, required=True)
 
-    # State transition buttons
     def action_activate(self):
         for asset in self:
             asset.state = 'active'
@@ -75,7 +77,6 @@ class FacilityAsset(models.Model):
         string='Condition',
         tracking=True
     )
-    # location = fields.Char('Location', tracking=True)  # REMOVED
 
     # Location Hierarchy Fields
     room_id = fields.Many2one(
@@ -86,13 +87,13 @@ class FacilityAsset(models.Model):
         'facilities.building', string='Building',
         compute='_compute_building_floor',
         store=True,
-        readonly=False # allow override if needed
+        readonly=False
     )
     floor_id = fields.Many2one(
         'facilities.floor', string='Floor',
         compute='_compute_building_floor',
         store=True,
-        readonly=False # allow override if needed
+        readonly=False
     )
 
     @api.depends('room_id')
@@ -136,7 +137,6 @@ class FacilityAsset(models.Model):
         max_height=256
     )
 
-    # COMPUTED FIELDS
     warranty_status = fields.Selection(
         [
             ('valid', 'Valid'),
@@ -155,7 +155,6 @@ class FacilityAsset(models.Model):
         store=True
     )
 
-    # New field for dashboard compatibility
     is_enterprise = fields.Boolean(
         string="Enterprise Mode",
         compute='_compute_is_enterprise',
@@ -183,7 +182,6 @@ class FacilityAsset(models.Model):
             asset.maintenance_due = bool(due_maintenances)
 
     def _compute_is_enterprise(self):
-        """Check if web_enterprise module is installed"""
         enterprise_installed = self.env['ir.module.module'].search_count([
             ('name', '=', 'web_enterprise'),
             ('state', '=', 'installed')
@@ -201,7 +199,6 @@ class FacilityAsset(models.Model):
                     qr.make(fit=True)
                     img = qr.make_image()
 
-                    # Convert to base64
                     buffered = io.BytesIO()
                     img.save(buffered, format="PNG")
                     img_str = base64.b64encode(buffered.getvalue())
@@ -224,7 +221,6 @@ class FacilityAsset(models.Model):
         return [(record.id, f"{record.name} [{record.asset_code}]") for record in self]
 
     def action_open_dashboard(self):
-        """Open appropriate dashboard view based on availability of enterprise"""
         self.ensure_one()
         if self.is_enterprise:
             return {
@@ -246,3 +242,76 @@ class FacilityAsset(models.Model):
                 'target': 'current',
                 'context': dict(self.env.context),
             }
+
+    @api.depends('maintenance_ids', 'depreciation_ids')
+    def _compute_history_events(self):
+        for asset in self:
+            events = []
+            # Maintenance events
+            for maint in asset.maintenance_ids:
+                if maint.last_maintenance_date:
+                    events.append({
+                        'date': str(maint.last_maintenance_date),
+                        'type': 'maintenance',
+                        'name': maint.name,
+                        'notes': maint.notes,
+                        'details': f"Type: {maint.maintenance_type}"
+                    })
+            # Depreciation events
+            for dep in asset.depreciation_ids:
+                events.append({
+                    'date': str(dep.depreciation_date),
+                    'type': 'depreciation',
+                    'name': 'Depreciation',
+                    'notes': f"Amount: {dep.depreciation_amount}",
+                    'details': f"Value After: {dep.value_after}"
+                })
+            # Movement events (Stock Picking)
+            pickings = self.env['stock.picking'].search([('workorder_id.asset_id', '=', asset.id)])
+            for picking in pickings:
+                if picking.scheduled_date:
+                    events.append({
+                        'date': str(picking.scheduled_date),
+                        'type': 'movement',
+                        'name': picking.name,
+                        'notes': f"Transferred: {picking.origin}",
+                        'details': f"State: {picking.state}"
+                    })
+            asset.history_events = sorted(events, key=lambda e: e['date'], reverse=True)
+
+    @api.depends('history_events')
+    def _compute_history_events_html(self):
+        for asset in self:
+            html = "<div class='o_asset_timeline'>"
+            for event in asset.history_events or []:
+                color = {
+                    "maintenance": "#28a745",
+                    "depreciation": "#ffc107",
+                    "movement": "#17a2b8"
+                }.get(event.get("type"), "#007bff")
+                html += f"""
+                    <div class="o_timeline_event" style="margin-bottom:1em; padding-left:1.5em; position:relative;">
+                        <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:{color}; position:absolute; left:0; top:0.5em;"></span>
+                        <strong>{event.get('date', '')}</strong>
+                        <span class="badge" style="background:{color}; color:white; margin-left:0.5em;">{event.get('type', '').capitalize()}</span>
+                        <div><b>{event.get('name', '')}</b></div>
+                        <div>{event.get('notes', '')}</div>
+                        <div style="color:#6c757d; font-size:0.85em;">{event.get('details', '')}</div>
+                    </div>
+                """
+            if not (asset.history_events or []):
+                html += "<span>No history yet.</span>"
+            html += "</div>"
+            asset.history_events_html = html
+
+    @api.depends('room_id', 'floor_id', 'building_id')
+    def _compute_location(self):
+        for asset in self:
+            vals = []
+            if asset.room_id:
+                vals.append(asset.room_id.name)
+            if asset.floor_id:
+                vals.append(f"Floor {asset.floor_id.name}")
+            if asset.building_id:
+                vals.append(f"Building {asset.building_id.name}")
+            asset.location = ", ".join(vals) if vals else ""

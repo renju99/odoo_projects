@@ -52,6 +52,7 @@
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',
         'reports/maintenance_report.xml',
+        'reports/workorder_maintenance_report.xml',
         'views/asset_dashboard_views.xml',
 
         # UI Menus

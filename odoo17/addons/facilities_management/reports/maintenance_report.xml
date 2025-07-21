@@ -1,65 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo xmlns:width="http://www.w3.org/1999/xhtml">
-    <record id="action_report_asset_maintenance" model="ir.actions.report">
+<odoo>
+    <record id="action_report_asset_maintenance_tabular" model="ir.actions.report">
         <field name="name">Asset Maintenance Report</field>
         <field name="model">facilities.asset</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">facilities_management.report_asset_maintenance_template</field>
-        <field name="report_file">facilities_management.report_asset_maintenance_template</field>
+        <field name="report_name">facilities_management.report_asset_maintenance_tabular_template</field>
+        <field name="report_file">facilities_management.report_asset_maintenance_tabular_template</field>
         <field name="print_report_name">'Maintenance Report - %s' % (object.name)</field>
         <field name="binding_model_id" ref="facilities_management.model_facilities_asset"/>
         <field name="binding_type">report</field>
     </record>
 
-    <template id="report_asset_maintenance_template">
+    <template id="report_asset_maintenance_tabular_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
-                    <div class="page">
-                        <h2>Maintenance Report for <span t-field="o.name"/></h2>
-                        <div class="row mt32 mb32">
-                            <div class="col-6">
-                                <strong>Asset Name:</strong> <span t-field="o.name"/><br/>
-                                <strong>Asset Tag:</strong> <span t-field="o.asset_tag"/><br/>
-                                <strong>Serial Number:</strong> <span t-field="o.serial_number"/><br/>
-                                <strong>Category:</strong> <span t-field="o.category_id.name"/><br/>
-                                <strong>Barcode:</strong>
-                                <span t-field="o.barcode"/>
-                                <br/>
-<img t-if="o.barcode"
-     t-att-src="('/report/barcode/QR/%s' % o.barcode)"
-     style="width:3cm; height:3cm; object-fit:contain;"/>
-                            </div>
-                            <div class="col-6">
-                                <strong>Facility:</strong> <span t-field="o.facility_id.name"/><br/>
-                                <strong>Responsible Person:</strong> <span t-field="o.responsible_id.name"/><br/>
-                                <strong>Condition:</strong> <span t-field="o.condition"/><br/>
-                                <strong>Location:</strong> <span t-field="o.location"/><br/>
-                            </div>
-                        </div>
+                    <div class="page" style="padding:24px; max-width:800px;">
+                        <h2 style="color:#1b2945; border-bottom:2px solid #eee; margin-bottom:24px;">Maintenance Report</h2>
+                        <table style="width:100%; font-size:14px; border-collapse:collapse; margin-bottom:32px;">
+                            <tr>
+                                <td style="font-weight:bold; color:#555; width:30%;">Asset</td>
+                                <td><span t-field="o.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Asset Code</td>
+                                <td><span t-field="o.asset_code"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Category</td>
+                                <td><span t-field="o.category_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Barcode</td>
+                                <td>
+                                    <span t-field="o.barcode"/>
+                                    <img t-if="o.barcode"
+                                         t-att-src="('/report/barcode/QR/%s' % o.barcode)"
+                                         style="margin-left:8px; width:32px; height:32px; object-fit:contain; vertical-align:middle;"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Serial Number</td>
+                                <td><span t-field="o.serial_number"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Condition</td>
+                                <td>
+                                    <span t-field="o.condition"/>
+                                    <span t-if="o.condition == 'new'" style="color:#28a745; font-weight:bold;">&#9679;</span>
+                                    <span t-if="o.condition == 'good'" style="color:#17a2b8; font-weight:bold;">&#9679;</span>
+                                    <span t-if="o.condition == 'fair'" style="color:#ffc107; font-weight:bold;">&#9679;</span>
+                                    <span t-if="o.condition == 'poor'" style="color:#dc3545; font-weight:bold;">&#9679;</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Facility</td>
+                                <td><span t-field="o.facility_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Location</td>
+                                <td><span t-field="o.location"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Responsible</td>
+                                <td>
+                                    <t t-if="o.responsible_id">
+                                        <span t-field="o.responsible_id.name"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="color:#bbb;">—</span>
+                                    </t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Department</td>
+                                <td>
+                                    <t t-if="o.department_id">
+                                        <span t-field="o.department_id.name"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="color:#bbb;">—</span>
+                                    </t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Manufacturer</td>
+                                <td>
+                                    <t t-if="o.manufacturer_id">
+                                        <span t-field="o.manufacturer_id.name"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="color:#bbb;">—</span>
+                                    </t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Purchase Date</td>
+                                <td>
+                                    <t t-if="o.purchase_date">
+                                        <span t-field="o.purchase_date"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="color:#bbb;">—</span>
+                                    </t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:bold; color:#555;">Warranty Expiry</td>
+                                <td>
+                                    <t t-if="o.warranty_expiration_date">
+                                        <span t-field="o.warranty_expiration_date"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="color:#bbb;">—</span>
+                                    </t>
+                                    <span t-if="o.warranty_status == 'valid'" style="color:#28a745; font-weight:bold; margin-left:8px;">&#10004; Valid</span>
+                                    <span t-if="o.warranty_status == 'expired'" style="color:#dc3545; font-weight:bold; margin-left:8px;">&#10006; Expired</span>
+                                </td>
+                            </tr>
+                        </table>
 
-                        <h3>Maintenance History</h3>
-                        <table class="table table-sm mt-4">
-                            <thead>
+                        <h3 style="color:#1b2945; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:8px;">Maintenance History</h3>
+                        <table class="table table-bordered table-sm" style="width:100%; border-collapse:collapse;">
+                            <thead style="background:#f9f9f9;">
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                    <th>Cost</th>
-                                    <th>Performed By</th>
+                                    <th style="width:16%; text-align:left;">Date</th>
+                                    <th style="width:16%; text-align:left;">Type</th>
+                                    <th style="width:40%; text-align:left;">Notes</th>
+                                    <th style="width:14%; text-align:left;">Status</th>
+                                    <th style="width:14%; text-align:left;">Next Scheduled</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr t-foreach="o.maintenance_ids" t-as="maintenance">
-                                    <td><span t-field="maintenance.maintenance_date"/></td>
-                                    <td><span t-field="maintenance.maintenance_type"/></td>
-                                    <td><span t-field="maintenance.description"/></td>
-                                    <td><span t-field="maintenance.cost"/></td>
-                                    <td><span t-field="maintenance.performed_by.name"/></td>
+                                    <td>
+                                        <t t-if="maintenance.last_maintenance_date">
+                                            <span t-field="maintenance.last_maintenance_date"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span style="color:#bbb;">—</span>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <span t-field="maintenance.maintenance_type"/>
+                                    </td>
+                                    <td>
+                                        <t t-if="maintenance.notes">
+                                            <span t-field="maintenance.notes"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span style="color:#bbb;">—</span>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <span t-field="maintenance.status"/>
+                                    </td>
+                                    <td>
+                                        <t t-if="maintenance.next_maintenance_date">
+                                            <span t-field="maintenance.next_maintenance_date"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span style="color:#bbb;">—</span>
+                                        </t>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
-                        <p t-if="not o.maintenance_ids">No maintenance records found for this asset.</p>
+                        <p t-if="not o.maintenance_ids" style="color:#888; font-style:italic; margin-top:8px;">
+                            No maintenance records found for this asset.
+                        </p>
                     </div>
                 </t>
             </t>
