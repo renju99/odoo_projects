@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Permit Tree View -->
+    <record id="view_workorder_permit_tree" model="ir.ui.view">
+        <field name="name">maintenance.workorder.permit.tree</field>
+        <field name="model">maintenance.workorder.permit</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="permit_type"/>
+                <field name="status"/>
+                <field name="issued_date"/>
+                <field name="expiry_date"/>
+                <field name="requested_by_id"/>
+                <field name="approved_by_id"/>
+                <field name="workorder_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Permit Action Window -->
+    <record id="action_workorder_permit" model="ir.actions.act_window">
+        <field name="name">Work Order Permits</field>
+        <field name="res_model">maintenance.workorder.permit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p>
+                Manage and track permits required for work orders.
+            </p>
+        </field>
+    </record>
+
+    <!-- Permit Form View (Odoo 17 syntax, with statusbar, workflow buttons, and chatter) -->
+    <record id="view_workorder_permit_form" model="ir.ui.view">
+        <field name="name">maintenance.workorder.permit.form</field>
+        <field name="model">maintenance.workorder.permit</field>
+        <field name="arch" type="xml">
+            <form string="Work Order Permit">
+                <header>
+                    <field name="status" widget="statusbar"
+                        statusbar_visible="requested,pending_manager_approval,approved,rejected,expired"
+                        statusbar_colors='{"approved":"green","rejected":"red"}'/>
+
+                    <button name="action_submit_for_approval"
+                            type="object"
+                            string="Send to Facility Manager"
+                            class="oe_highlight"
+                            show="status == 'requested'"/>
+
+                    <button name="action_approve"
+                            type="object"
+                            string="Approve"
+                            class="btn-primary"
+                            show="status == 'pending_manager_approval' and facility_manager_id == uid"/>
+
+                    <button name="action_reject"
+                            type="object"
+                            string="Reject"
+                            class="btn-danger"
+                            show="status == 'pending_manager_approval' and facility_manager_id == uid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="permit_type"/>
+                        <field name="workorder_id"/>
+                        <field name="status"/>
+                        <field name="issued_date"/>
+                        <field name="expiry_date"/>
+                        <field name="requested_by_id"/>
+                        <field name="approved_by_id"/>
+                        <!-- Do NOT use required here; enforce in Python only -->
+                        <field name="rejected_reason"
+                               placeholder="Provide rejection reason if rejecting"/>
+                        <field name="facility_manager_id" readonly="1"/>
+                        <field name="notes"/>
+                        <field name="attachment_ids" widget="many2many_binary"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+</odoo>
