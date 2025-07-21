@@ -32,6 +32,23 @@ class FacilityAsset(models.Model):
         ('disposed', 'Disposed'),
     ], string='State', default='draft', tracking=True, required=True)
 
+    # State transition buttons
+    def action_activate(self):
+        for asset in self:
+            asset.state = 'active'
+
+    def action_set_maintenance(self):
+        for asset in self:
+            asset.state = 'maintenance'
+
+    def action_set_active(self):
+        for asset in self:
+            asset.state = 'active'
+
+    def action_dispose(self):
+        for asset in self:
+            asset.state = 'disposed'
+
     # Relationships
     maintenance_ids = fields.One2many('asset.maintenance.schedule', 'asset_id', string='Maintenance Schedules')
     depreciation_ids = fields.One2many('facilities.asset.depreciation', 'asset_id', string='Depreciation Records')

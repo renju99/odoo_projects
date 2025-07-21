@@ -5,17 +5,36 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <field name="status" widget="statusbar" nolabel="1"/>
+                    <field name="approval_state" widget="statusbar"
+                        statusbar_visible="draft,submitted,supervisor,manager,approved,in_progress,done,refused,escalated"
+                        statusbar_colors='{"refused":"red","escalated":"orange","done":"green"}'/>
+                    <field name="status" invisible="1"/>
+                    <field name="all_tasks_completed" invisible="1"/>
+                    <button name="action_submit_for_approval" type="object"
+                        string="Submit for Approval" class="oe_highlight"
+                        invisible="approval_state != 'draft'"/>
+                    <button name="action_supervisor_approve" type="object"
+                        string="Supervisor Approve" class="oe_highlight"
+                        invisible="approval_state != 'submitted'"/>
+                    <button name="action_manager_approve" type="object"
+                        string="Manager Approve" class="oe_highlight"
+                        invisible="approval_state != 'supervisor'"/>
+                    <button name="action_fully_approve" type="object"
+                        string="Fully Approve" class="oe_highlight"
+                        invisible="approval_state != 'manager'"/>
+                    <button name="action_refuse" type="object"
+                        string="Refuse" class="btn-danger"
+                        invisible="approval_state in ['refused','done','cancelled']"/>
                     <button name="action_start_progress" type="object" string="Start Progress"
-                        invisible="status != 'draft'" class="oe_highlight"/>
+                        invisible="approval_state != 'approved'" class="oe_highlight"/>
                     <button name="action_complete" type="object" string="Mark as Completed"
-                        invisible="['|', ('status', '!=', 'in_progress'), ('all_tasks_completed', '=', False)]"
+                        invisible="(status != 'in_progress') or (not all_tasks_completed)"
                         class="oe_highlight"
                         confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked."/>
                     <button name="action_cancel" type="object" string="Cancel"
-                        invisible="status in ('done', 'cancelled')"/>
+                        invisible="status in ['done', 'cancelled']"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
-                        invisible="status not in ('done', 'cancelled')"
+                        invisible="status == 'draft'"
                         confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
                 </header>
                 <sheet>
@@ -45,21 +64,29 @@
                                 invisible="workorder_task_ids != False"
                                 readonly="status != 'draft'"
                                 help="Select a Job Plan to automatically populate tasks for this work order."/>
-                            <!-- NEW FIELDS -->
                             <field name="service_type"/>
                             <field name="maintenance_team_id"/>
                         </group>
                         <group string="Personnel &amp; Scheduled Dates">
                             <field name="technician_id"/>
+                            <field name="supervisor_id" readonly="1"/>
+                            <field name="manager_id" readonly="1"/>
                             <field name="start_date"/>
                             <field name="end_date"/>
                         </group>
+                    </group>
+                    <group string="Approval Details" colspan="2">
+                        <field name="submitted_by_id" readonly="1"/>
+                        <field name="approved_by_id" readonly="1"/>
+                        <field name="approval_request_date" readonly="1"/>
+                        <field name="escalation_deadline" readonly="1"/>
+                        <field name="escalation_to_id" readonly="1"/>
+                        <field name="escalation_count" readonly="1"/>
                     </group>
                     <group string="Actual Work Dates">
                         <field name="actual_start_date"/>
                         <field name="actual_end_date"/>
                     </group>
-                    <!-- SLA Information -->
                     <group string="SLA Information" colspan="2">
                         <field name="sla_id"/>
                         <field name="sla_response_deadline" readonly="1"/>
@@ -136,9 +163,11 @@
         <field name="name">maintenance.workorder.tree</field>
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
-            <tree decoration-success="status=='done'" decoration-danger="status=='cancelled'" decoration-info="status=='in_progress'">
+            <tree decoration-success="status=='done'"
+                  decoration-danger="status=='cancelled'"
+                  decoration-info="status=='in_progress'">
+                <field name="status" invisible="1"/>
                 <field name="name"/>
-                <field name="status" widget="statusbar"/>
                 <field name="asset_id"/>
                 <field name="facility_id"/>
                 <field name="room_id"/>
@@ -148,6 +177,8 @@
                 <field name="service_type"/>
                 <field name="maintenance_team_id"/>
                 <field name="technician_id"/>
+                <field name="supervisor_id"/>
+                <field name="manager_id"/>
                 <field name="sla_id"/>
                 <field name="sla_response_status" widget="badge"/>
                 <field name="sla_resolution_status" widget="badge"/>

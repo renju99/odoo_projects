@@ -5,6 +5,18 @@ from datetime import timedelta
 
 _logger = logging.getLogger(__name__)
 
+APPROVAL_STATES = [
+    ('draft', 'Draft'),
+    ('submitted', 'Submitted'),
+    ('supervisor', 'Supervisor Approved'),
+    ('manager', 'Manager Approved'),
+    ('approved', 'Fully Approved'),
+    ('in_progress', 'In Progress'),
+    ('done', 'Completed'),
+    ('refused', 'Refused'),
+    ('cancelled', 'Cancelled'),
+    ('escalated', 'Escalated'),
+]
 
 class MaintenanceWorkOrder(models.Model):
     _name = 'maintenance.workorder'
@@ -22,34 +34,14 @@ class MaintenanceWorkOrder(models.Model):
     name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True,
                        default=lambda self: _('New'))
     asset_id = fields.Many2one('facilities.asset', string='Asset', required=True)
-    facility_id = fields.Many2one(
-        'facilities.facility',
-        string='Facility',
-        related='asset_id.facility_id',
-        store=True,
-        readonly=True,
-    )
-    room_id = fields.Many2one(
-        'facilities.room',
-        string='Room',
-        related='asset_id.room_id',
-        store=True,
-        readonly=True,
-    )
-    building_id = fields.Many2one(
-        'facilities.building',
-        string='Building',
-        related='asset_id.building_id',
-        store=True,
-        readonly=True,
-    )
-    floor_id = fields.Many2one(
-        'facilities.floor',
-        string='Floor',
-        related='asset_id.floor_id',
-        store=True,
-        readonly=True,
-    )
+    facility_id = fields.Many2one('facilities.facility', string='Facility',
+                                  related='asset_id.facility_id', store=True, readonly=True)
+    room_id = fields.Many2one('facilities.room', string='Room',
+                              related='asset_id.room_id', store=True, readonly=True)
+    building_id = fields.Many2one('facilities.building', string='Building',
+                                  related='asset_id.building_id', store=True, readonly=True)
+    floor_id = fields.Many2one('facilities.floor', string='Floor',
+                               related='asset_id.floor_id', store=True, readonly=True)
     schedule_id = fields.Many2one('asset.maintenance.schedule', string='Maintenance Schedule')
     work_order_type = fields.Selection([
         ('preventive', 'Preventive'),
@@ -58,6 +50,8 @@ class MaintenanceWorkOrder(models.Model):
         ('inspection', 'Inspection'),
     ], string='Type', default='corrective', required=True)
     technician_id = fields.Many2one('hr.employee', string='Primary Technician', domain="[('is_technician', '=', True)]")
+    supervisor_id = fields.Many2one('res.users', string="Supervisor", readonly=True)
+    manager_id = fields.Many2one('res.users', string="Manager", readonly=True)
     start_date = fields.Datetime(string='Scheduled Start Date')
     end_date = fields.Datetime(string='Scheduled End Date')
     actual_start_date = fields.Datetime(string='Actual Start Date', readonly=True)
@@ -85,7 +79,6 @@ class MaintenanceWorkOrder(models.Model):
     has_parts = fields.Boolean(compute='_compute_has_parts', store=True,
                                help="Indicates if this work order has parts lines.")
 
-    # --- ADDED FIELDS ---
     service_type = fields.Selection(
         SERVICE_TYPE_SELECTION,
         string="Service Type",
@@ -96,24 +89,14 @@ class MaintenanceWorkOrder(models.Model):
         'maintenance.team', string="Maintenance Team",
         help="The team assigned to handle this work order."
     )
-    # --------------------
 
-    # Hierarchical Sections
-    section_ids = fields.One2many(
-        'maintenance.workorder.section', 'workorder_id',
-        string='Sections'
-    )
-
-    # Flat task list (legacy support)
+    section_ids = fields.One2many('maintenance.workorder.section', 'workorder_id', string='Sections')
     workorder_task_ids = fields.One2many('maintenance.workorder.task', 'workorder_id', string='Tasks', copy=True)
-
     all_tasks_completed = fields.Boolean(compute='_compute_all_tasks_completed', store=False,
                                          help="Indicates if all checklist tasks are marked as completed.")
-
     job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan',
                                   help="The job plan linked to this work order, providing detailed tasks.")
 
-    # --- SLA Fields ---
     sla_id = fields.Many2one('maintenance.workorder.sla', string='Applied SLA', readonly=True)
     sla_response_deadline = fields.Datetime(string='Response Deadline', readonly=True)
     sla_resolution_deadline = fields.Datetime(string='Resolution Deadline', readonly=True)
@@ -129,6 +112,58 @@ class MaintenanceWorkOrder(models.Model):
         ('critical', 'Critical'),
         ('breached', 'Breached')
     ], string='Resolution SLA Status', compute='_compute_sla_status', store=True)
+
+    approval_state = fields.Selection(
+        APPROVAL_STATES, string="Approval State", default='draft', tracking=True
+    )
+    submitted_by_id = fields.Many2one('res.users', string="Submitted By", readonly=True)
+    approved_by_id = fields.Many2one('res.users', string="Approved By", readonly=True)
+    approval_request_date = fields.Datetime(string="Approval Requested At")
+    escalation_deadline = fields.Datetime(string="Escalation Deadline")
+    escalation_to_id = fields.Many2one('res.users', string="Escalate To")
+    escalation_count = fields.Integer(string="Escalation Count", default=0, readonly=True)
+
+    @api.onchange('technician_id')
+    def _onchange_technician_fill_supervisor_manager(self):
+        for rec in self:
+            rec.supervisor_id, rec.manager_id = rec._get_supervisor_manager_from_technician(rec.technician_id)
+
+    def _get_supervisor_manager_from_technician(self, technician):
+        supervisor_user = False
+        manager_user = False
+        if technician and technician.parent_id and technician.parent_id.user_id:
+            supervisor_user = technician.parent_id.user_id
+            if technician.parent_id.parent_id and technician.parent_id.parent_id.user_id:
+                manager_user = technician.parent_id.parent_id.user_id
+        return supervisor_user, manager_user
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', _('New')) == _('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.workorder') or _('New')
+            technician = self.env['hr.employee'].browse(vals.get('technician_id'))
+            supervisor_user, manager_user = self._get_supervisor_manager_from_technician(technician)
+            vals['supervisor_id'] = supervisor_user.id if supervisor_user else False
+            vals['manager_id'] = manager_user.id if manager_user else False
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.job_plan_id:
+                rec._copy_job_plan_sections_and_tasks()
+            rec._apply_sla()
+        return records
+
+    def write(self, vals):
+        if 'technician_id' in vals:
+            technician = self.env['hr.employee'].browse(vals['technician_id'])
+            supervisor_user, manager_user = self._get_supervisor_manager_from_technician(technician)
+            vals['supervisor_id'] = supervisor_user.id if supervisor_user else False
+            vals['manager_id'] = manager_user.id if manager_user else False
+        result = super().write(vals)
+        if any(field in vals for field in ['priority', 'asset_id', 'work_order_type']):
+            for rec in self:
+                rec._apply_sla()
+        return result
 
     @api.depends('section_ids.task_ids.is_done', 'workorder_task_ids.is_done')
     def _compute_all_tasks_completed(self):
@@ -150,25 +185,6 @@ class MaintenanceWorkOrder(models.Model):
     def _compute_picking_count(self):
         for rec in self:
             rec.picking_count = 1 if rec.picking_id else 0
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('maintenance.workorder') or _('New')
-        records = super().create(vals_list)
-        for rec in records:
-            if rec.job_plan_id:
-                rec._copy_job_plan_sections_and_tasks()
-            rec._apply_sla()
-        return records
-
-    def write(self, vals):
-        result = super().write(vals)
-        if any(field in vals for field in ['priority', 'asset_id', 'work_order_type']):
-            for rec in self:
-                rec._apply_sla()
-        return result
 
     def _apply_sla(self):
         try:
@@ -227,8 +243,135 @@ class MaintenanceWorkOrder(models.Model):
                 else:
                     record.sla_resolution_status = 'on_time'
 
+    def _sync_status_with_approval(self):
+        for rec in self:
+            if rec.approval_state in ['refused', 'cancelled']:
+                rec.status = 'cancelled'
+            elif rec.approval_state == 'done':
+                rec.status = 'done'
+            elif rec.approval_state == 'in_progress':
+                rec.status = 'in_progress'
+            elif rec.approval_state == 'draft':
+                rec.status = 'draft'
+
+    def _create_approval_activity(self, user, summary, note):
+        if not user or not user.id:
+            _logger.warning("No valid user for activity: %s", user)
+            return
+        activity_type = self.env.ref('mail.mail_activity_data_todo')
+        model_id = self.env['ir.model']._get_id('maintenance.workorder')
+        self.env['mail.activity'].create({
+            'activity_type_id': activity_type.id,
+            'res_id': self.id,
+            'res_model_id': model_id,
+            'user_id': user.id,
+            'summary': summary,
+            'note': note,
+            'date_deadline': fields.Date.today() + timedelta(days=1),
+        })
+
+    def action_submit_for_approval(self):
+        for rec in self:
+            if rec.approval_state != 'draft':
+                raise UserError(_("Only draft work orders can be submitted!"))
+            rec.write({
+                'approval_state': 'submitted',
+                'submitted_by_id': self.env.user.id,
+                'approval_request_date': fields.Datetime.now(),
+                'escalation_deadline': fields.Datetime.now() + timedelta(hours=24),
+                'escalation_count': 0,
+            })
+            rec._sync_status_with_approval()
+            if rec.supervisor_id:
+                rec._create_approval_activity(
+                    rec.supervisor_id,
+                    _('Supervisor Approval Required'),
+                    _('Please approve work order %s.') % rec.name
+                )
+
+    def action_supervisor_approve(self):
+        for rec in self:
+            if rec.approval_state != 'submitted':
+                raise UserError(_("Must be in submitted state!"))
+            rec.write({
+                'approval_state': 'supervisor',
+                'approved_by_id': self.env.user.id,
+                'escalation_deadline': fields.Datetime.now() + timedelta(hours=24),
+                'escalation_count': rec.escalation_count,
+            })
+            rec._sync_status_with_approval()
+            if rec.manager_id:
+                rec._create_approval_activity(
+                    rec.manager_id,
+                    _('Manager Approval Required'),
+                    _('Please approve work order %s.') % rec.name
+                )
+
+    def action_manager_approve(self):
+        for rec in self:
+            if rec.approval_state != 'supervisor':
+                raise UserError(_("Must be supervisor approved!"))
+            rec.write({
+                'approval_state': 'manager',
+                'approved_by_id': self.env.user.id,
+                'escalation_deadline': False,
+                'escalation_count': rec.escalation_count,
+            })
+            rec._sync_status_with_approval()
+
+    def action_fully_approve(self):
+        for rec in self:
+            if rec.approval_state != 'manager':
+                raise UserError(_("Must be manager approved!"))
+            rec.write({
+                'approval_state': 'approved',
+                'approved_by_id': self.env.user.id,
+            })
+            rec._sync_status_with_approval()
+            if rec.technician_id and hasattr(rec.technician_id, 'user_id') and rec.technician_id.user_id:
+                rec._create_approval_activity(
+                    rec.technician_id.user_id,
+                    _('Start Work Order'),
+                    _('You can start work order %s.') % rec.name
+                )
+
+    def action_refuse(self):
+        for rec in self:
+            rec.write({'approval_state': 'refused'})
+            rec._sync_status_with_approval()
+
+    def action_cancel(self):
+        for rec in self:
+            rec.write({'approval_state': 'cancelled'})
+            rec._sync_status_with_approval()
+
+    def action_escalate(self):
+        for rec in self:
+            if rec.escalation_deadline and fields.Datetime.now() > rec.escalation_deadline:
+                if rec.approval_state == 'submitted' and rec.manager_id:
+                    rec.write({
+                        'approval_state': 'escalated',
+                        'escalation_to_id': rec.manager_id.id,
+                        'escalation_count': rec.escalation_count + 1,
+                        'escalation_deadline': fields.Datetime.now() + timedelta(hours=24),
+                    })
+                    rec._sync_status_with_approval()
+                    rec._create_approval_activity(
+                        rec.manager_id,
+                        _('Manager Approval Required (Escalated)'),
+                        _('Work order %s has been escalated for your approval.') % rec.name
+                    )
+
+    @api.model
+    def cron_auto_escalate_workorders(self):
+        workorders = self.search([
+            ('approval_state', 'in', ['submitted', 'supervisor']),
+            ('escalation_deadline', '<', fields.Datetime.now())
+        ])
+        for wo in workorders:
+            wo.action_escalate()
+
     def _copy_job_plan_sections_and_tasks(self):
-        """Copy sections & tasks from job plan to work order."""
         self.ensure_one()
         if self.job_plan_id and not self.section_ids:
             for section_template in self.job_plan_id.section_ids.sorted('sequence'):
@@ -249,13 +392,6 @@ class MaintenanceWorkOrder(models.Model):
                         'is_done': False,
                         'notes': False,
                     })
-
-    def action_cancel(self):
-        for rec in self:
-            if rec.status not in ('done', 'cancelled'):
-                rec.write({'status': 'cancelled'})
-            else:
-                raise UserError(_("Cannot cancel a completed or already cancelled work order."))
 
     def action_start_progress(self):
         for rec in self:
@@ -283,14 +419,15 @@ class MaintenanceWorkOrder(models.Model):
 
     def action_reset_to_draft(self):
         for rec in self:
-            if rec.status in ('done', 'cancelled'):
+            if rec.status != 'draft':
                 rec.write({
                     'status': 'draft',
                     'actual_start_date': False,
                     'actual_end_date': False,
                 })
+                rec.approval_state = 'draft'
             else:
-                raise UserError(_("Only completed or cancelled work orders can be reset to draft."))
+                raise UserError(_("Work order is already in draft state."))
 
     def action_view_picking(self):
         self.ensure_one()

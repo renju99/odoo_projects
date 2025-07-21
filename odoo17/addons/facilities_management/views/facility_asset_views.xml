@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Asset Tree View (location removed, room/building/floor added) -->
+    <!-- Asset Tree View -->
     <record id="view_facilities_asset_tree" model="ir.ui.view">
         <field name="name">facilities.asset.tree</field>
         <field name="model">facilities.asset</field>
@@ -15,20 +15,31 @@
                 <field name="building_id"/>
                 <field name="floor_id"/>
                 <field name="condition"/>
+                <field name="state"/>
                 <field name="responsible_id"/>
                 <field name="active"/>
             </tree>
         </field>
     </record>
 
-    <!-- Asset Form View (location removed, room+building+floor added, building/floor auto-populated and readonly) -->
+    <!-- Asset Form View -->
     <record id="view_facility_asset_form" model="ir.ui.view">
         <field name="name">facilities.asset.form</field>
         <field name="model">facilities.asset</field>
         <field name="arch" type="xml">
             <form string="Asset">
                 <header>
-                    <field name="condition" widget="statusbar" nolabel="1"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,active,maintenance,disposed"
+                           statusbar_colors='{"draft":"gray","active":"blue","maintenance":"orange","disposed":"red"}'/>
+                    <button name="action_activate" string="Activate" type="object"
+                            invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="action_set_maintenance" string="Set to Maintenance" type="object"
+                            invisible="state != 'active'" class="oe_highlight"/>
+                    <button name="action_set_active" string="Set Active" type="object"
+                            invisible="state != 'maintenance'" class="oe_highlight"/>
+                    <button name="action_dispose" string="Dispose" type="object"
+                            invisible="state == 'disposed'" class="oe_highlight"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -64,7 +75,6 @@
                             <field name="department_id"/>
                         </group>
                     </group>
-
                     <notebook>
                         <page string="Acquisition &amp; Lifecycle" name="acquisition_lifecycle">
                             <group>
@@ -81,7 +91,6 @@
                                 </group>
                             </group>
                         </page>
-
                         <page string="Manufacturer &amp; Service" name="manufacturer_service">
                             <group>
                                 <group>
@@ -93,7 +102,6 @@
                                 </group>
                             </group>
                         </page>
-
                         <page string="Depreciation Records" name="depreciation_records">
                             <field name="depreciation_ids">
                                 <tree>
@@ -105,7 +113,6 @@
                                 </tree>
                             </field>
                         </page>
-
                         <page string="Notes &amp; Documents" name="notes_documents">
                             <field name="notes"/>
                             <separator string="Documents"/>
@@ -123,7 +130,7 @@
         </field>
     </record>
 
-    <!-- Asset Form Inherit for create attribute, if needed -->
+    <!-- Asset Form Inherit for create attribute -->
     <record id="view_facility_asset_form_inherit" model="ir.ui.view">
         <field name="name">facilities.asset.form.inherit</field>
         <field name="model">facilities.asset</field>
@@ -135,7 +142,7 @@
         </field>
     </record>
 
-    <!-- Asset Search View (location removed, room/building/floor added) -->
+    <!-- Asset Search View -->
     <record id="view_facilities_asset_search" model="ir.ui.view">
         <field name="name">facilities.asset.search</field>
         <field name="model">facilities.asset</field>
