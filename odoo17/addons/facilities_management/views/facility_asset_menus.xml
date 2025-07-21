@@ -7,7 +7,8 @@
         <field name="view_mode">kanban,tree,form,calendar</field>
         <field name="context">{
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first facility asset!
@@ -86,7 +87,8 @@
         <field name="context">{
             'search_default_group_by_category': 1,
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <record id="action_assets_by_state" model="ir.actions.act_window">
@@ -95,19 +97,21 @@
         <field name="view_mode">kanban,tree</field>
         <field name="context">{
             'search_default_group_by_condition': 1
-        }</field>
+            }
+        </field>
     </record>
 
-<record id="action_warranty_monitoring" model="ir.actions.act_window">
-    <field name="name">Warranty Monitoring</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">calendar,tree,kanban</field>
-    <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
-    <field name="context">{
-        'search_default_has_warranty': 1
-    }</field>
-    <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
-</record>
+    <record id="action_warranty_monitoring" model="ir.actions.act_window">
+        <field name="name">Warranty Monitoring</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,kanban</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
+        <field name="context">{
+            'search_default_has_warranty': 1
+            }
+        </field>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+    </record>
 
     <record id="action_maintenance_due" model="ir.actions.act_window">
         <field name="name">Maintenance Due</field>
@@ -168,7 +172,8 @@
         <field name="view_mode">kanban,graph,pivot</field>
         <field name="context">{
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Asset Value Analysis Action -->
@@ -179,7 +184,8 @@
         <field name="context">{
             'search_default_group_by_category': 1,
             'search_default_filter_active': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Maintenance Calendar Action -->
@@ -204,7 +210,8 @@
         <field name="view_mode">graph,pivot,tree</field>
         <field name="context">{
             'search_default_group_by_state': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Asset Reports Actions -->
@@ -214,7 +221,8 @@
         <field name="view_mode">graph,pivot,tree</field>
         <field name="context">{
             'search_default_group_by_category': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <!-- Facility Reports Action -->
@@ -284,69 +292,58 @@
         </field>
     </record>
 
-    <!-- Work Order Types Action -->
-    <record id="action_maintenance_workorder_type" model="ir.actions.act_window">
-        <field name="name">Work Order Types</field>
-        <field name="res_model">maintenance.workorder.type</field>
-        <field name="view_mode">tree,form</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create work order types!
-            </p>
-            <p>
-                Categorize your maintenance work orders by type.
-            </p>
-        </field>
-    </record>
-
-    <record id="action_asset_performance_dashboard" model="ir.actions.act_window">
+        <record id="action_asset_performance_dashboard" model="ir.actions.act_window">
         <field name="name">Performance Dashboard</field>
         <field name="res_model">facilities.asset.performance</field>
         <field name="view_mode">graph,pivot,tree</field>
         <field name="context">{
             'search_default_last_30_days': 1,
             'search_default_group_by_asset': 1
-        }</field>
+            }
+        </field>
     </record>
 
     <record id="action_asset" model="ir.actions.act_window">
-    <field name="name">Assets</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">kanban,tree,form,calendar</field>
-    <field name="context">{
-        'search_default_active': 1
-    }</field>
-    <field name="help" type="html">
-        <p class="o_view_nocontent_smiling_face">
-            Create your first facility asset!
-        </p>
-        <p>
-            Manage your facility assets including equipment, furniture, and infrastructure.
-            Use calendar view to track important dates.
-        </p>
-    </field>
-</record>
+        <field name="name">Assets</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="context">{
+            'search_default_active': 1
+            }
+        </field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first facility asset!
+            </p>
+            <p>
+                Manage your facility assets including equipment, furniture, and infrastructure.
+                Use calendar view to track important dates.
+            </p>
+        </field>
+    </record>
 
-<record id="action_assets_overview" model="ir.actions.act_window">
-    <field name="name">Assets Overview</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">kanban,graph,pivot,calendar</field>
-    <field name="context">{
-        'search_default_group_by_category': 1,
-        'search_default_filter_active': 1
-    }</field>
-</record>
+    <record id="action_assets_overview" model="ir.actions.act_window">
+        <field name="name">Assets Overview</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">kanban,graph,pivot,calendar</field>
+        <field name="context">{
+            'search_default_group_by_category': 1,
+            'search_default_filter_active': 1
+            }
+        </field>
+    </record>
 
-<record id="action_warranty_monitoring" model="ir.actions.act_window">
-    <field name="name">Warranty Monitoring</field>
-    <field name="res_model">facilities.asset</field>
-    <field name="view_mode">calendar,tree,kanban</field>
-    <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
-    <field name="context">{
-        'search_default_has_warranty': 1
-    }</field>
-    <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
-</record>
+    <record id="action_warranty_monitoring" model="ir.actions.act_window">
+        <field name="name">Warranty Monitoring</field>
+        <field name="res_model">facilities.asset</field>
+        <field name="view_mode">calendar,tree,kanban</field>
+        <field name="view_id" ref="view_facilities_asset_calendar_warranty"/>
+        <field name="context">{
+            'search_default_has_warranty': 1
+            }
+        </field>
+        <field name="domain">[('warranty_expiration_date', '!=', False)]</field>
+    </record>
 
     <!-- ROOT MENU -->
     <menuitem id="menu_facilities_root"
@@ -481,10 +478,10 @@
               sequence="10"/>
 
     <menuitem id="menu_maintenance_schedule"
-             name="Schedules"
-             parent="menu_maintenance_operations"
-             action="action_maintenance_schedule"
-             sequence="20"/>
+              name="Schedules"
+              parent="menu_maintenance_operations"
+              action="action_maintenance_schedule"
+              sequence="20"/>
 
     <menuitem id="menu_maintenance_calendar_item"
               name="Calendar View"
@@ -503,12 +500,6 @@
               parent="menu_maintenance_planning"
               action="action_maintenance_job_plan"
               sequence="10"/>
-
-    <menuitem id="menu_maintenance_workorder_type_item"
-              name="Work Order Types"
-              parent="menu_maintenance_planning"
-              action="action_maintenance_workorder_type"
-              sequence="20"/>
 
     <!-- Maintenance Analytics -->
     <menuitem id="menu_maintenance_analytics"
@@ -611,17 +602,29 @@
               groups="base.group_system"/>
 
     <menuitem id="menu_asset_calendar_views"
-          name="Calendar Views"
-          parent="menu_asset_analytics"
-          sequence="50"/>
+              name="Calendar Views"
+              parent="menu_asset_analytics"
+              sequence="50"/>
 
-<menuitem id="menu_warranty_calendar_item"
-          name="Warranty Calendar"
-          parent="menu_asset_calendar_views"
-          action="action_asset_warranty_calendar"
-          sequence="10"/>
+    <menuitem id="menu_warranty_calendar_item"
+              name="Warranty Calendar"
+              parent="menu_asset_calendar_views"
+              action="action_asset_warranty_calendar"
+              sequence="10"/>
 
-<menuitem id="menu_purchase_timeline_item" name="Purchase Timeline" parent="menu_asset_calendar_views" action="action_asset_purchase_calendar" sequence="20"/>
+    <menuitem id="menu_purchase_timeline_item" name="Purchase Timeline" parent="menu_asset_calendar_views"
+              action="action_asset_purchase_calendar" sequence="20"/>
+
+    <menuitem id="menu_maintenance_permits"
+              name="Permits"
+              parent="menu_maintenance"
+              sequence="40"/>
+
+    <menuitem id="menu_workorder_permit"
+              name="Work Order Permits"
+              parent="menu_maintenance_permits"
+              action="action_workorder_permit"
+              sequence="10"/>
 
 
 </odoo>

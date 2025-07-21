@@ -51,6 +51,7 @@ class MaintenanceWorkOrder(models.Model):
     ], string='Type', default='corrective', required=True)
     technician_id = fields.Many2one('hr.employee', string='Primary Technician', domain="[('is_technician', '=', True)]")
     supervisor_id = fields.Many2one('res.users', string="Supervisor", readonly=True)
+    permit_ids = fields.One2many('maintenance.workorder.permit', 'workorder_id', string='Permits')
     manager_id = fields.Many2one('res.users', string="Manager", readonly=True)
     start_date = fields.Datetime(string='Scheduled Start Date')
     end_date = fields.Datetime(string='Scheduled End Date')

@@ -12,8 +12,6 @@ _logger = logging.getLogger(__name__)
 from . import hr_employee
 from . import product
 from . import maintenance_team
-from . import maintenance_workorder_type
-
 # REMOVED: from . import maintenance_job_plan_task (as it's defined in maintenance_job_plan.py)
 from . import maintenance_job_plan      # <--- This import is correct and will load both classes
 
@@ -24,6 +22,7 @@ from . import room
 from . import facility
 from . import asset_category
 from . import asset
+from . import workorder_permit
 
 # 3. Asset Performance (depends on asset)
 from . import asset_performance

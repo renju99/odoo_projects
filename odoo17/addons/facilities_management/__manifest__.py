@@ -47,6 +47,7 @@
         'views/asset_performance_views.xml',
         'views/asset_calendar_views.xml',
         'views/assign_technician_wizard_view.xml',
+        'views/maintenance_workorder_permit_views.xml',
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',
