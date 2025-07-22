@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_monthly_building_report_wizard_form" model="ir.ui.view">
+        <field name="name">monthly.building.report.wizard.form</field>
+        <field name="model">monthly.building.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Download Monthly Building Maintenance Report">
+                <group>
+                    <field name="building_id"/>
+                    <field name="year"/>
+                    <field name="month"/>
+                </group>
+                <footer>
+                    <button string="Generate PDF Report" type="object" name="action_generate_pdf_report" class="btn-primary"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,9 @@
+<odoo>
+    <record id="monthly_building_report_pdf_action" model="ir.actions.report">
+        <field name="name">Monthly Building Maintenance PDF</field>
+        <field name="model">monthly.building.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">facilities_management.monthly_building_report_pdf</field>
+        <field name="print_report_name">'Monthly_Building_Report_%s_%s_%s' % (object.building_id.name, object.month, object.year)</field>
+    </record>
+</odoo>

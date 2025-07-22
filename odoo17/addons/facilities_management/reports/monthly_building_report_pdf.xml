@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="monthly_building_report_pdf">
+        <t t-call="web.html_container">
+            <div class="page">
+                <h1>Monthly Building Maintenance Report</h1>
+                <h2>
+                  <t t-esc="doc['building']"/>
+                  -
+                  <t t-esc="doc['month']"/>
+                  <t t-esc="doc['year']"/>
+                </h2>
+                <hr/>
+                <h3>Summary</h3>
+                <ul>
+                    <li>Total Work Orders: <t t-esc="doc['total']"/></li>
+                    <li>Average Completion Time (hrs): <t t-esc="doc['avg_completion_time']"/></li>
+                </ul>
+                <!-- Chart grid layout -->
+                <table style="width:100%; border:none;">
+                    <tr>
+                        <td style="vertical-align:top; width:33%;">
+                            <h3>Status Distribution</h3>
+                            <img t-att-src="'data:image/png;base64,%s' % doc['chart_status']" style="max-width:100%;"/>
+                        </td>
+                        <td style="vertical-align:top; width:33%;">
+                            <h3>Work Orders by Type</h3>
+                            <img t-att-src="'data:image/png;base64,%s' % doc['chart_type']" style="max-width:100%;"/>
+                        </td>
+                        <td style="vertical-align:top; width:33%;">
+                            <h3>Work Orders by Priority</h3>
+                            <img t-att-src="'data:image/png;base64,%s' % doc['chart_priority']" style="max-width:100%;"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top;">
+                            <h3>Work Orders by Day</h3>
+                            <img t-att-src="'data:image/png;base64,%s' % doc['chart_days']" style="max-width:100%;"/>
+                        </td>
+                        <td style="vertical-align:top;">
+                            <h3>SLA Compliance</h3>
+                            <img t-att-src="'data:image/png;base64,%s' % doc['chart_sla']" style="max-width:100%;"/>
+                        </td>
+                        <td style="vertical-align:top;">
+                            <h3>Wordcloud</h3>
+                            <t t-if="doc['chart_wordcloud']">
+                                <img t-att-src="'data:image/png;base64,%s' % doc['chart_wordcloud']" style="max-width:100%;"/>
+                            </t>
+                        </td>
+                    </tr>
+                </table>
+                <h3>Top 5 Assets</h3>
+                <img t-att-src="'data:image/png;base64,%s' % doc['chart_assets']" style="max-width:500px;"/>
+                <table class="table table-sm">
+                    <tr><th>Asset</th><th>Work Orders</th></tr>
+                    <t t-foreach="doc['top_assets']" t-as="a">
+                        <tr><td><t t-esc="a[0]"/></td><td><t t-esc="a[1]"/></td></tr>
+                    </t>
+                </table>
+                <h3>Top 5 Rooms</h3>
+                <img t-att-src="'data:image/png;base64,%s' % doc['chart_rooms']" style="max-width:500px;"/>
+                <table class="table table-sm">
+                    <tr><th>Room</th><th>Work Orders</th></tr>
+                    <t t-foreach="doc['top_rooms']" t-as="r">
+                        <tr><td><t t-esc="r[0]"/></td><td><t t-esc="r[1]"/></td></tr>
+                    </t>
+                </table>
+                <h3>Top 5 Parts Used</h3>
+                <img t-att-src="'data:image/png;base64,%s' % doc['chart_parts']" style="max-width:500px;"/>
+                <table class="table table-sm">
+                    <tr><th>Part</th><th>Qty Used</th></tr>
+                    <t t-foreach="doc['top_parts']" t-as="p">
+                        <tr><td><t t-esc="p[0]"/></td><td><t t-esc="p[1]"/></td></tr>
+                    </t>
+                </table>
+                <h3>Most Frequent Issues</h3>
+                <t t-if="doc['top_issues']">
+                    <table class="table table-sm">
+                        <tr><th>Word</th><th>Count</th></tr>
+                        <t t-foreach="doc['top_issues']" t-as="i">
+                            <tr><td><t t-esc="i[0]"/></td><td><t t-esc="i[1]"/></td></tr>
+                        </t>
+                    </table>
+                </t>
+                <hr/>
+                <i>Generated on <t t-esc="doc['generated_on']"/></i>
+            </div>
+        </t>
+    </template>
+</odoo>
