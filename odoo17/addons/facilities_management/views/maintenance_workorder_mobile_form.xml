@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mobile Form View -->
+    <record id="view_workorder_mobile_form" model="ir.ui.view">
+        <field name="name">maintenance.workorder.mobile.form</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <form string="Work Order (Mobile)" class="o_mobile_form">
+                <sheet>
+                    <group>
+                        <field name="name" readonly="1"/>
+                        <field name="asset_id" readonly="1"/>
+                        <field name="status" widget="statusbar"/>
+                        <field name="actual_start_date"/>
+                        <field name="actual_end_date"/>
+                    </group>
+
+                    <!-- Show tasks as editable list -->
+                    <group string="Tasks">
+                        <field name="workorder_task_ids">
+                            <tree editable="bottom">
+                                <field name="section_id" readonly="1"/>
+                                <field name="sequence" readonly="1"/>
+                                <field name="name" readonly="1"/>
+                                <field name="description" readonly="1"/>
+                                <field name="duration" readonly="1"/>
+                                <field name="tools_materials" readonly="1"/>
+                                <field name="responsible_id" readonly="1"/>
+                                <field name="product_id" readonly="1"/>
+                                <field name="quantity" readonly="1"/>
+                                <field name="uom_id" readonly="1"/>
+                                <field name="frequency_type" readonly="1"/>
+                                <field name="is_checklist_item" readonly="1"/>
+                                <!-- Editable fields for technician -->
+                                <field name="is_done"/>
+                                <field name="notes"/>
+                                <field name="before_image" widget="image"/>
+                                <field name="before_image_filename" readonly="1"/>
+                                <field name="after_image" widget="image"/>
+                                <field name="after_image_filename" readonly="1"/>
+                            </tree>
+                        </field>
+                    </group>
+
+                    <group>
+                        <field name="signature" widget="signature"/>
+                    </group>
+                    <footer>
+                        <button name="action_mark_done" string="Mark as Done" type="object" class="btn-primary"
+                                invisible="status == 'done'"/>
+                        <button name="action_cancel" string="Cancel" type="object" class="btn-secondary"
+                                invisible="status == 'cancelled'"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Mobile Form Action -->
+    <record id="action_maintenance_workorder_mobile_form" model="ir.actions.act_window">
+        <field name="name">Work Orders (Mobile)</field>
+        <field name="res_model">maintenance.workorder</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_workorder_mobile_form"/>
+        <field name="domain">[('status', 'in', ['in_progress', 'draft'])]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create and process work orders directly from your mobile device!
+            </p>
+        </field>
+    </record>
+
+    <!-- Mobile Menu Item -->
+
+</odoo>
