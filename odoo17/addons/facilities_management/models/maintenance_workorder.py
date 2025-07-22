@@ -83,6 +83,7 @@ class MaintenanceWorkOrder(models.Model):
     workorder_task_ids = fields.One2many('maintenance.workorder.task', 'workorder_id', string='Tasks', copy=True)
     all_tasks_completed = fields.Boolean(compute='_compute_all_tasks_completed', store=False)
     job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan')
+    signature = fields.Binary(string="Technician Signature", attachment=True)
 
     sla_id = fields.Many2one('maintenance.workorder.sla', string='Applied SLA', readonly=True)
     sla_response_deadline = fields.Datetime(string='Response Deadline', readonly=True)
@@ -453,3 +454,15 @@ class MaintenanceWorkOrder(models.Model):
                 'target': 'new',
                 'context': {'default_asset_id': rec.asset_id.id}
             }
+
+    def action_mark_done(self):
+        for rec in self:
+            if rec.status != 'done':
+                rec.status = 'done'
+        return True
+
+    def action_cancel(self):
+        for rec in self:
+            if rec.status != 'cancelled':
+                rec.status = 'cancelled'
+        return True

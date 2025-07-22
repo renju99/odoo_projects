@@ -26,3 +26,5 @@ access_maintenance_workorder_permit_user,maintenance.workorder.permit user,model
 access_maintenance_workorder_permit_manager,maintenance.workorder.permit manager,model_maintenance_workorder_permit,base.group_system,1,1,1,1
 access_monthly_building_report_wizard_user,monthly.building.report.wizard user,model_monthly_building_report_wizard,base.group_user,1,0,0,0
 access_monthly_building_report_wizard_manager,monthly.building.report.wizard manager,model_monthly_building_report_wizard,base.group_system,1,1,1,1
+access_maintenance_workorder_mobile_user,maintenance.workorder mobile user,model_maintenance_workorder,base.group_user,1,1,1,1
+access_maintenance_workorder_task_mobile_user,maintenance.workorder.task mobile user,model_maintenance_workorder_task,base.group_user,1,1,1,1

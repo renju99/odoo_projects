@@ -631,6 +631,12 @@
               parent="menu_maintenance_permits"
               action="action_workorder_permit"
               sequence="10"/>
+        <menuitem id="menu_maintenance_workorder_mobile"
+              name="Work Orders (Mobile)"
+              parent="menu_maintenance_operations"
+              action="action_maintenance_workorder_mobile_form"
+              sequence="20"
+              groups="base.group_user"/>
 
 
 </odoo>

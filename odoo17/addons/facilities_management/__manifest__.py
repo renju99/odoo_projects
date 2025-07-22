@@ -58,6 +58,7 @@
         'reports/maintenance_report.xml',
         'reports/workorder_maintenance_report.xml',
         'views/asset_dashboard_views.xml',
+        'views/maintenance_workorder_mobile_form.xml',
 
         # UI Menus
             'views/facility_asset_menus.xml',
