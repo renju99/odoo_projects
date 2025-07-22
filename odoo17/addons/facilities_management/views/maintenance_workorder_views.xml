@@ -174,10 +174,9 @@
             <tree decoration-success="status=='done'"
                   decoration-danger="status=='cancelled'"
                   decoration-info="status=='in_progress'">
-                <field name="status" invisible="1"/>
-                <field name="approval_state" invisible="1"/>
-                <field name="all_tasks_completed" invisible="1"/>
                 <field name="name"/>
+                <field name="status"/>
+                <field name="approval_state"/>
                 <field name="asset_id"/>
                 <field name="facility_id"/>
                 <field name="room_id"/>
@@ -192,16 +191,6 @@
                 <field name="sla_id"/>
                 <field name="sla_response_status" widget="badge"/>
                 <field name="sla_resolution_status" widget="badge"/>
-                <button name="action_start_progress" string="Start Workorder" type="object" icon="fa-play"
-                        invisible="approval_state != 'approved' or status != 'draft'"/>
-                <button name="action_complete" string="Mark as Completed" type="object" icon="fa-check"
-                        invisible="status != 'in_progress'"/>
-                <button name="action_refuse" string="Refuse" type="object" icon="fa-ban"
-                        invisible="approval_state in ('refused','done','cancelled') or status == 'done'"/>
-                <button name="action_cancel" string="Cancel" type="object" icon="fa-times"
-                        invisible="status in ('done', 'cancelled')"/>
-                <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
-                <button name="action_report_downtime" string="Report Downtime" type="object" icon="fa-clock-o"/>
             </tree>
         </field>
     </record>

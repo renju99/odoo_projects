@@ -48,6 +48,10 @@
         'views/asset_calendar_views.xml',
         'views/assign_technician_wizard_view.xml',
         'views/maintenance_workorder_permit_views.xml',
+        "views/monthly_building_report_wizard_view.xml",
+        "views/monthly_building_report_wizard_action.xml",
+        "reports/monthly_building_report_pdf.xml",
+        "reports/monthly_building_report_pdf_action.xml",
 
         # Reporting and Dashboards
         'views/maintenance_report_views.xml',

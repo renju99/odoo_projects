@@ -593,6 +593,12 @@
               action="action_asset_performance_dashboard"
               sequence="45"/>
 
+        <menuitem id="menu_monthly_building_report_wizard"
+              name="Monthly Building Maintenance Report"
+              parent="menu_facilities_reports"
+              action="action_monthly_building_report_wizard"
+              sequence="40"/>
+
     <!-- Add to Configuration section -->
     <menuitem id="menu_asset_downtime_reasons_item"
               name="Downtime Reasons"
