@@ -247,16 +247,29 @@ class FacilityAsset(models.Model):
     def _compute_history_events(self):
         for asset in self:
             events = []
-            # Maintenance events
+            # Maintenance events (EXCLUDE preventive work orders)
             for maint in asset.maintenance_ids:
-                if maint.last_maintenance_date:
-                    events.append({
-                        'date': str(maint.last_maintenance_date),
-                        'type': 'maintenance',
-                        'name': maint.name,
-                        'notes': maint.notes,
-                        'details': f"Type: {maint.maintenance_type}"
-                    })
+                # If maintenance schedule links to a workorder, and that workorder is NOT preventive, include it
+                if hasattr(maint, 'workorder_ids') and maint.workorder_ids:
+                    for workorder in maint.workorder_ids:
+                        if getattr(workorder, 'work_order_type', None) != 'preventive' and maint.last_maintenance_date:
+                            events.append({
+                                'date': str(maint.last_maintenance_date),
+                                'type': 'maintenance',
+                                'name': maint.name,
+                                'notes': maint.notes,
+                                'details': f"Type: {maint.maintenance_type} ({workorder.work_order_type})"
+                            })
+                else:
+                    # If no workorder connection, just append (legacy)
+                    if getattr(maint, 'maintenance_type', None) != 'preventive' and maint.last_maintenance_date:
+                        events.append({
+                            'date': str(maint.last_maintenance_date),
+                            'type': 'maintenance',
+                            'name': maint.name,
+                            'notes': maint.notes,
+                            'details': f"Type: {maint.maintenance_type}"
+                        })
             # Depreciation events
             for dep in asset.depreciation_ids:
                 events.append({

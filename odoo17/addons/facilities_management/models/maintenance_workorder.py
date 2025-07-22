@@ -23,14 +23,6 @@ class MaintenanceWorkOrder(models.Model):
     _description = 'Maintenance Work Order'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    SERVICE_TYPE_SELECTION = [
-        ('maintenance', 'Maintenance'),
-        ('cleaning', 'Cleaning'),
-        ('security', 'Security'),
-        ('esg', 'ESG Compliance'),
-        ('hse', 'HSE Incident')
-    ]
-
     name = fields.Char(string='Work Order Reference', required=True, copy=False, readonly=True,
                        default=lambda self: _('New'))
     asset_id = fields.Many2one('facilities.asset', string='Asset', required=True)
@@ -70,7 +62,6 @@ class MaintenanceWorkOrder(models.Model):
         ('2', 'Normal'),
         ('3', 'High'),
     ], string='Priority', default='1')
-
     description = fields.Text(string='Work Order Description')
     work_done = fields.Text(string='Work Done Notes')
     parts_used_ids = fields.One2many('maintenance.workorder.part_line', 'workorder_id', string='Parts Used')
@@ -80,23 +71,18 @@ class MaintenanceWorkOrder(models.Model):
     has_parts = fields.Boolean(compute='_compute_has_parts', store=True,
                                help="Indicates if this work order has parts lines.")
 
-    service_type = fields.Selection(
-        SERVICE_TYPE_SELECTION,
-        string="Service Type",
-        tracking=True,
-        help="Department/Service this work order belongs to."
-    )
-    maintenance_team_id = fields.Many2one(
-        'maintenance.team', string="Maintenance Team",
-        help="The team assigned to handle this work order."
-    )
-
+    service_type = fields.Selection([
+        ('maintenance', 'Maintenance'),
+        ('cleaning', 'Cleaning'),
+        ('security', 'Security'),
+        ('esg', 'ESG Compliance'),
+        ('hse', 'HSE Incident')
+    ], string="Service Type", tracking=True)
+    maintenance_team_id = fields.Many2one('maintenance.team', string="Maintenance Team")
     section_ids = fields.One2many('maintenance.workorder.section', 'workorder_id', string='Sections')
     workorder_task_ids = fields.One2many('maintenance.workorder.task', 'workorder_id', string='Tasks', copy=True)
-    all_tasks_completed = fields.Boolean(compute='_compute_all_tasks_completed', store=False,
-                                         help="Indicates if all checklist tasks are marked as completed.")
-    job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan',
-                                  help="The job plan linked to this work order, providing detailed tasks.")
+    all_tasks_completed = fields.Boolean(compute='_compute_all_tasks_completed', store=False)
+    job_plan_id = fields.Many2one('maintenance.job.plan', string='Job Plan')
 
     sla_id = fields.Many2one('maintenance.workorder.sla', string='Applied SLA', readonly=True)
     sla_response_deadline = fields.Datetime(string='Response Deadline', readonly=True)
@@ -246,7 +232,7 @@ class MaintenanceWorkOrder(models.Model):
 
     def _sync_status_with_approval(self):
         for rec in self:
-            if rec.approval_state in ['refused', 'cancelled']:
+            if rec.approval_state in ['refused', 'cancelled', 'escalated']:
                 rec.status = 'cancelled'
             elif rec.approval_state == 'done':
                 rec.status = 'done'
@@ -396,22 +382,26 @@ class MaintenanceWorkOrder(models.Model):
 
     def action_start_progress(self):
         for rec in self:
-            if rec.status == 'draft':
+            if rec.status == 'draft' and rec.approval_state == 'approved':
                 rec.write({
                     'status': 'in_progress',
                     'actual_start_date': fields.Datetime.now(),
+                    'approval_state': 'in_progress',
                 })
             else:
-                raise UserError(_("Work order must be in 'Draft' state to start progress."))
+                raise UserError(_("Work order must be approved and in 'Draft' state to start progress."))
 
     def action_complete(self):
         for rec in self:
             if rec.status == 'in_progress':
-                if not rec.all_tasks_completed:
-                    raise UserError(_("Cannot complete work order: Not all checklist tasks are marked as completed."))
+                # Mark all checklist tasks as completed before completing the workorder
+                all_tasks = rec.section_ids.mapped('task_ids') | rec.workorder_task_ids
+                checklist_tasks = all_tasks.filtered('is_checklist_item')
+                checklist_tasks.write({'is_done': True})
                 rec.write({
                     'status': 'done',
                     'actual_end_date': fields.Datetime.now(),
+                    'approval_state': 'done',
                 })
                 if rec.schedule_id and rec.actual_end_date:
                     rec.schedule_id.last_maintenance_date = rec.actual_end_date.date()
@@ -425,8 +415,8 @@ class MaintenanceWorkOrder(models.Model):
                     'status': 'draft',
                     'actual_start_date': False,
                     'actual_end_date': False,
+                    'approval_state': 'draft',
                 })
-                rec.approval_state = 'draft'
             else:
                 raise UserError(_("Work order is already in draft state."))
 
@@ -434,7 +424,6 @@ class MaintenanceWorkOrder(models.Model):
         self.ensure_one()
         if not self.picking_id:
             raise UserError(_("No parts transfer associated with this work order."))
-
         return {
             'type': 'ir.actions.act_window',
             'name': _('Parts Transfer'),

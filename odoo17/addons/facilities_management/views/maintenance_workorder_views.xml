@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Workorder Form View -->
     <record id="view_workorder_form" model="ir.ui.view">
         <field name="name">maintenance.workorder.form</field>
         <field name="model">maintenance.workorder</field>
@@ -8,36 +7,32 @@
             <form>
                 <header>
                     <field name="approval_state" widget="statusbar"
-                        statusbar_visible="draft,submitted,supervisor,manager,approved,in_progress,done,refused,escalated"
-                        statusbar_colors='{"refused":"red","escalated":"orange","done":"green"}'/>
+                        statusbar_visible="draft,submitted,supervisor,manager,approved,in_progress,done,refused,escalated,cancelled"
+                        statusbar_colors='{"refused":"red","escalated":"orange","done":"green","cancelled":"red"}'/>
                     <field name="status" invisible="1"/>
                     <field name="all_tasks_completed" invisible="1"/>
-                    <button name="action_submit_for_approval" type="object"
-                        string="Submit for Approval" class="oe_highlight"
+                    <button name="action_submit_for_approval" type="object" string="Submit for Approval" class="oe_highlight"
                         invisible="approval_state != 'draft'"/>
-                    <button name="action_supervisor_approve" type="object"
-                        string="Supervisor Approve" class="oe_highlight"
+                    <button name="action_supervisor_approve" type="object" string="Supervisor Approve" class="oe_highlight"
                         invisible="approval_state != 'submitted'"/>
-                    <button name="action_manager_approve" type="object"
-                        string="Manager Approve" class="oe_highlight"
+                    <button name="action_manager_approve" type="object" string="Manager Approve" class="oe_highlight"
                         invisible="approval_state != 'supervisor'"/>
-                    <button name="action_fully_approve" type="object"
-                        string="Fully Approve" class="oe_highlight"
+                    <button name="action_fully_approve" type="object" string="Fully Approve" class="oe_highlight"
                         invisible="approval_state != 'manager'"/>
-                    <button name="action_refuse" type="object"
-                        string="Refuse" class="btn-danger"
-                        invisible="approval_state == 'refused' or approval_state == 'done' or approval_state == 'cancelled'"/>
-                    <button name="action_start_progress" type="object" string="Start Progress"
-                        invisible="approval_state != 'approved'" class="oe_highlight"/>
-                    <button name="action_complete" type="object" string="Mark as Completed"
-                        invisible="status != 'in_progress' or not all_tasks_completed"
-                        class="oe_highlight"
-                        confirm="Are you sure you want to mark this Work Order as completed? Not all tasks might be checked."/>
+                    <button name="action_refuse" type="object" string="Refuse" class="btn-danger"
+                        invisible="approval_state in ('refused','done','cancelled') or status == 'done'"/>
                     <button name="action_cancel" type="object" string="Cancel"
-                        invisible="status == 'done' or status == 'cancelled'"/>
+                        invisible="status in ('done', 'cancelled')"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
                         invisible="status == 'draft'"
                         confirm="Are you sure you want to reset this work order to draft state? This action cannot be undone easily."/>
+                    <button name="action_escalate" type="object" string="Escalate"
+                        invisible="not (approval_state in ('submitted','supervisor') and escalation_deadline and escalation_deadline &lt;= context_today())"/>
+                    <button name="action_start_progress" type="object" string="Start Workorder" class="oe_highlight"
+                        invisible="status != 'draft' or approval_state != 'approved'"/>
+                    <button name="action_complete" type="object" string="Mark as Completed" class="oe_highlight"
+                        invisible="status != 'in_progress'"
+                        confirm="Are you sure you want to mark this Work Order as completed? All tasks will be set as completed."/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -149,7 +144,6 @@
                                 </tree>
                             </field>
                         </page>
-                        <!-- PERMITS TAB -->
                         <page string="Permits">
                             <field name="permit_ids">
                                 <tree editable="bottom">
@@ -161,7 +155,6 @@
                                 </tree>
                             </field>
                         </page>
-                        <!-- END PERMITS TAB -->
                     </notebook>
                 </sheet>
                 <div class="oe_chatter">
@@ -174,7 +167,6 @@
         </field>
     </record>
 
-    <!-- Workorder Tree View -->
     <record id="view_maintenance_workorder_tree" model="ir.ui.view">
         <field name="name">maintenance.workorder.tree</field>
         <field name="model">maintenance.workorder</field>
@@ -183,6 +175,8 @@
                   decoration-danger="status=='cancelled'"
                   decoration-info="status=='in_progress'">
                 <field name="status" invisible="1"/>
+                <field name="approval_state" invisible="1"/>
+                <field name="all_tasks_completed" invisible="1"/>
                 <field name="name"/>
                 <field name="asset_id"/>
                 <field name="facility_id"/>
@@ -198,7 +192,14 @@
                 <field name="sla_id"/>
                 <field name="sla_response_status" widget="badge"/>
                 <field name="sla_resolution_status" widget="badge"/>
-                <button name="action_start_progress" string="Start Work" type="object" icon="fa-play"/>
+                <button name="action_start_progress" string="Start Workorder" type="object" icon="fa-play"
+                        invisible="approval_state != 'approved' or status != 'draft'"/>
+                <button name="action_complete" string="Mark as Completed" type="object" icon="fa-check"
+                        invisible="status != 'in_progress'"/>
+                <button name="action_refuse" string="Refuse" type="object" icon="fa-ban"
+                        invisible="approval_state in ('refused','done','cancelled') or status == 'done'"/>
+                <button name="action_cancel" string="Cancel" type="object" icon="fa-times"
+                        invisible="status in ('done', 'cancelled')"/>
                 <button name="action_assign_technician" string="Assign Tech" type="object" icon="fa-user-plus"/>
                 <button name="action_report_downtime" string="Report Downtime" type="object" icon="fa-clock-o"/>
             </tree>
