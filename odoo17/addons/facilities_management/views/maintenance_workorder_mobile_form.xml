@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Minimal Mobile List View for Technicians -->
     <record id="view_workorder_mobile_list" model="ir.ui.view">
@@ -6,10 +5,10 @@
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
             <tree string="Work Orders (Mobile Minimal)" class="o_mobile_list">
-                <field name="name"/> <!-- Work Order Reference -->
-                <field name="building_id"/> <!-- Building (related field) -->
-                <field name="sla_response_status"/> <!-- Response SLA Status -->
-                <field name="sla_resolution_status"/> <!-- Resolution SLA Status -->
+                <field name="name"/>
+                <field name="building_id"/>
+                <field name="sla_response_status"/>
+                <field name="sla_resolution_status"/>
             </tree>
         </field>
     </record>
@@ -22,14 +21,14 @@
             <form string="Work Order (Minimal Mobile)" class="o_mobile_form">
                 <sheet>
                     <group>
-                        <field name="name" readonly="1"/> <!-- Work Order Reference -->
-                        <field name="building_id" readonly="1"/> <!-- Building -->
-                        <field name="sla_response_status" readonly="1"/> <!-- Response SLA Status -->
-                        <field name="sla_resolution_status" readonly="1"/> <!-- Resolution SLA Status -->
-                        <field name="status" invisible="1"/> <!-- Required for button modifiers -->
+                        <field name="name" readonly="1"/>
+                        <field name="building_id" readonly="1"/>
+                        <field name="sla_response_status" readonly="1"/>
+                        <field name="sla_resolution_status" readonly="1"/>
+                        <field name="status" invisible="1"/>
                     </group>
                     <group>
-                        <field name="signature" widget="signature"/> <!-- Technician Signature -->
+                        <field name="signature" widget="signature"/>
                     </group>
                     <footer>
                         <button name="action_mark_done" string="Mark as Done" type="object" class="btn-primary"
@@ -42,16 +41,19 @@
         </field>
     </record>
 
-    <!-- Minimal List Action for Technicians -->
+    <!-- Action for Mobile Work Orders -->
     <record id="action_maintenance_workorder_mobile_list" model="ir.actions.act_window">
         <field name="name">Work Orders (Mobile List)</field>
         <field name="res_model">maintenance.workorder</field>
         <field name="view_mode">tree,form</field>
         <field name="context">{}</field>
-        <field name="view_ids" eval="[(0, 0, {'view_mode': 'tree', 'view_id': ref('view_workorder_mobile_list')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_workorder_mobile_minimal_form')})]"/>
+        <field name="view_ids" eval="[
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_workorder_mobile_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_workorder_mobile_minimal_form')})
+        ]"/>
     </record>
 
-    <!-- Menu item referencing the above action -->
+    <!-- Menu item referencing the mobile list action -->
     <menuitem id="menu_maintenance_workorder_mobile"
               name="Work Orders (Mobile)"
               parent="menu_maintenance_operations"
