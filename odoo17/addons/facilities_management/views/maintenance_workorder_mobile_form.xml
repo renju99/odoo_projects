@@ -1,49 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Mobile Form View -->
-    <record id="view_workorder_mobile_form" model="ir.ui.view">
-        <field name="name">maintenance.workorder.mobile.form</field>
+    <!-- Minimal Mobile List View for Technicians -->
+    <record id="view_workorder_mobile_list" model="ir.ui.view">
+        <field name="name">maintenance.workorder.mobile.list</field>
         <field name="model">maintenance.workorder</field>
         <field name="arch" type="xml">
-            <form string="Work Order (Mobile)" class="o_mobile_form">
+            <tree string="Work Orders (Mobile Minimal)" class="o_mobile_list">
+                <field name="name"/> <!-- Work Order Reference -->
+                <field name="building_id"/> <!-- Building (related field) -->
+                <field name="sla_response_status"/> <!-- Response SLA Status -->
+                <field name="sla_resolution_status"/> <!-- Resolution SLA Status -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- Minimal Mobile Form View for Technicians -->
+    <record id="view_workorder_mobile_minimal_form" model="ir.ui.view">
+        <field name="name">maintenance.workorder.mobile.minimal.form</field>
+        <field name="model">maintenance.workorder</field>
+        <field name="arch" type="xml">
+            <form string="Work Order (Minimal Mobile)" class="o_mobile_form">
                 <sheet>
                     <group>
-                        <field name="name" readonly="1"/>
-                        <field name="asset_id" readonly="1"/>
-                        <field name="status" widget="statusbar"/>
-                        <field name="actual_start_date"/>
-                        <field name="actual_end_date"/>
+                        <field name="name" readonly="1"/> <!-- Work Order Reference -->
+                        <field name="building_id" readonly="1"/> <!-- Building -->
+                        <field name="sla_response_status" readonly="1"/> <!-- Response SLA Status -->
+                        <field name="sla_resolution_status" readonly="1"/> <!-- Resolution SLA Status -->
+                        <field name="status" invisible="1"/> <!-- Required for button modifiers -->
                     </group>
-
-                    <!-- Show tasks as editable list -->
-                    <group string="Tasks">
-                        <field name="workorder_task_ids">
-                            <tree editable="bottom">
-                                <field name="section_id" readonly="1"/>
-                                <field name="sequence" readonly="1"/>
-                                <field name="name" readonly="1"/>
-                                <field name="description" readonly="1"/>
-                                <field name="duration" readonly="1"/>
-                                <field name="tools_materials" readonly="1"/>
-                                <field name="responsible_id" readonly="1"/>
-                                <field name="product_id" readonly="1"/>
-                                <field name="quantity" readonly="1"/>
-                                <field name="uom_id" readonly="1"/>
-                                <field name="frequency_type" readonly="1"/>
-                                <field name="is_checklist_item" readonly="1"/>
-                                <!-- Editable fields for technician -->
-                                <field name="is_done"/>
-                                <field name="notes"/>
-                                <field name="before_image" widget="image"/>
-                                <field name="before_image_filename" readonly="1"/>
-                                <field name="after_image" widget="image"/>
-                                <field name="after_image_filename" readonly="1"/>
-                            </tree>
-                        </field>
-                    </group>
-
                     <group>
-                        <field name="signature" widget="signature"/>
+                        <field name="signature" widget="signature"/> <!-- Technician Signature -->
                     </group>
                     <footer>
                         <button name="action_mark_done" string="Mark as Done" type="object" class="btn-primary"
@@ -56,21 +42,20 @@
         </field>
     </record>
 
-    <!-- Mobile Form Action -->
-    <record id="action_maintenance_workorder_mobile_form" model="ir.actions.act_window">
-        <field name="name">Work Orders (Mobile)</field>
+    <!-- Minimal List Action for Technicians -->
+    <record id="action_maintenance_workorder_mobile_list" model="ir.actions.act_window">
+        <field name="name">Work Orders (Mobile List)</field>
         <field name="res_model">maintenance.workorder</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="view_workorder_mobile_form"/>
-        <field name="domain">[('status', 'in', ['in_progress', 'draft'])]</field>
+        <field name="view_mode">tree,form</field>
         <field name="context">{}</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create and process work orders directly from your mobile device!
-            </p>
-        </field>
+        <field name="view_ids" eval="[(0, 0, {'view_mode': 'tree', 'view_id': ref('view_workorder_mobile_list')}), (0, 0, {'view_mode': 'form', 'view_id': ref('view_workorder_mobile_minimal_form')})]"/>
     </record>
 
-    <!-- Mobile Menu Item -->
-
+    <!-- Menu item referencing the above action -->
+    <menuitem id="menu_maintenance_workorder_mobile"
+              name="Work Orders (Mobile)"
+              parent="menu_maintenance_operations"
+              action="action_maintenance_workorder_mobile_list"
+              sequence="20"
+              groups="base.group_user"/>
 </odoo>
