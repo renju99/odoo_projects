@@ -67,6 +67,30 @@
         </field>
     </record>
 
+    <!-- Custom Form View for Maintenance Work Order Task (for subtasks) -->
+    <record id="view_workorder_task_form_custom" model="ir.ui.view">
+        <field name="name">maintenance.workorder.task.form.custom</field>
+        <field name="model">maintenance.workorder.task</field>
+        <field name="priority" eval="10"/>
+        <field name="arch" type="xml">
+            <form string="Task Details">
+                <sheet>
+                    <group>
+                        <field name="name" readonly="1"/>
+                        <field name="description"/>
+                        <field name="section_id"/>
+                        <field name="is_done"/>
+                        <field name="notes"/>
+                    </group>
+                    <group string="Images">
+                        <field name="before_image" widget="image"/>
+                        <field name="after_image" widget="image"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <!-- Action for Mobile Work Orders -->
     <record id="action_maintenance_workorder_mobile_list" model="ir.actions.act_window">
         <field name="name">Work Orders (Mobile List)</field>
