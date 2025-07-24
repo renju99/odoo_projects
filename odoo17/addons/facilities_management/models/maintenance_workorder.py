@@ -466,3 +466,15 @@ class MaintenanceWorkOrder(models.Model):
             if rec.status != 'cancelled':
                 rec.status = 'cancelled'
         return True
+
+    def action_open_job_plan_tasks_mobile(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Tasks to Complete'),
+            'res_model': 'maintenance.job.plan.task',  # Adjust this model name if your actual job plan task model is different
+            'view_mode': 'tree,form',
+            'domain': [('workorder_id', '=', self.id), ('is_done', '=', False)],
+            'context': {'default_workorder_id': self.id},
+            'target': 'current',
+        }

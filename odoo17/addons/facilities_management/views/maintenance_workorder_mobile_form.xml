@@ -3,6 +3,7 @@
     <record id="view_workorder_mobile_list" model="ir.ui.view">
         <field name="name">maintenance.workorder.mobile.list</field>
         <field name="model">maintenance.workorder</field>
+        <field name="priority" eval="20"/>
         <field name="arch" type="xml">
             <tree string="Work Orders (Mobile Minimal)" class="o_mobile_list">
                 <field name="name"/>
@@ -17,6 +18,7 @@
     <record id="view_workorder_mobile_minimal_form" model="ir.ui.view">
         <field name="name">maintenance.workorder.mobile.minimal.form</field>
         <field name="model">maintenance.workorder</field>
+        <field name="priority" eval="20"/>
         <field name="arch" type="xml">
             <form string="Work Order (Minimal Mobile)" class="o_mobile_form">
                 <sheet>
@@ -26,7 +28,15 @@
                         <field name="sla_response_status" readonly="1"/>
                         <field name="sla_resolution_status" readonly="1"/>
                         <field name="status" invisible="1"/>
+                        <field name="work_order_type" invisible="1"/>
+                        <field name="show_tasks_to_complete_btn" invisible="1"/>
                     </group>
+                    <button name="action_open_job_plan_tasks_mobile"
+                            string="Tasks to Complete"
+                            type="object"
+                            class="btn-info"
+                            icon="fa-tasks"
+                            invisible="not show_tasks_to_complete_btn"/>
                     <group>
                         <field name="signature" widget="signature"/>
                     </group>
@@ -41,16 +51,29 @@
         </field>
     </record>
 
+    <!-- Tree View for Maintenance Work Order Task -->
+    <record id="view_workorder_task_tree_custom" model="ir.ui.view">
+        <field name="name">maintenance.workorder.task.tree.custom</field>
+        <field name="model">maintenance.workorder.task</field>
+        <field name="priority" eval="10"/>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>         <!-- Task Description -->
+                <field name="section_id"/>
+                <field name="is_done"/>
+                <field name="notes"/>
+                <field name="description"/>
+            </tree>
+        </field>
+    </record>
+
     <!-- Action for Mobile Work Orders -->
     <record id="action_maintenance_workorder_mobile_list" model="ir.actions.act_window">
         <field name="name">Work Orders (Mobile List)</field>
         <field name="res_model">maintenance.workorder</field>
         <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_workorder_mobile_list"/>
         <field name="context">{}</field>
-        <field name="view_ids" eval="[
-            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_workorder_mobile_list')}),
-            (0, 0, {'view_mode': 'form', 'view_id': ref('view_workorder_mobile_minimal_form')})
-        ]"/>
     </record>
 
     <!-- Menu item referencing the mobile list action -->
