@@ -1,0 +1,22 @@
+<odoo>
+    <record id="mail_template_space_booking_confirmed" model="mail.template">
+        <field name="name">Space Booking Confirmation</field>
+        <field name="model_id" ref="model_facilities_space_booking"/>
+        <field name="subject">Booking Confirmed: ${object.room_id.name} (${object.start_datetime} - ${object.end_datetime})</field>
+        <field name="body_html">
+            <![CDATA[
+            <p>Hello ${object.user_id.name},</p>
+            <p>Your booking for <strong>${object.room_id.name}</strong> has been <strong>confirmed</strong>.</p>
+            <ul>
+                <li>Start: ${object.start_datetime}</li>
+                <li>End: ${object.end_datetime}</li>
+                <li>Purpose: ${object.purpose or ''}</li>
+            </ul>
+            <p>Thank you.</p>
+            ]]>
+        </field>
+        <field name="email_from">${(object.user_id.email or 'admin@example.com')|safe}</field>
+        <field name="email_to">${(object.user_id.email or 'admin@example.com')|safe}</field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

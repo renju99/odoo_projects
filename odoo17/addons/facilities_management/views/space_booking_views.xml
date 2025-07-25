@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Search View -->
+    <record id="view_space_booking_search" model="ir.ui.view">
+        <field name="name">facilities.space.booking.search</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_space_booking_tree" model="ir.ui.view">
+        <field name="name">facilities.space.booking.tree</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="state=='draft'" decoration-success="state=='confirmed'" decoration-muted="state=='cancelled'">
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="purpose"/>
+                <field name="attendees"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="view_space_booking_kanban" model="ir.ui.view">
+        <field name="name">facilities.space.booking.kanban</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="state"/>
+                <field name="purpose"/>
+                <field name="attendees"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div>Room: <field name="room_id"/></div>
+                                <div>User: <field name="user_id"/></div>
+                                <div t-if="record.purpose.raw_value">Purpose: <field name="purpose"/></div>
+                                <div t-if="record.attendees.raw_value">Attendees: <field name="attendees"/></div>
+                                <div>
+                                    <field name="start_datetime"/> - <field name="end_datetime"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <span>Status: <field name="state"/></span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_space_booking_form" model="ir.ui.view">
+        <field name="name">facilities.space.booking.form</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <form string="Space Booking">
+                <header>
+                    <button name="action_confirm" type="object" string="Confirm"
+                            invisible="state != 'draft'"
+                            class="btn-primary"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state == 'cancelled'"
+                            class="btn-secondary"/>
+                    <button name="action_draft" type="object" string="Set to Draft"
+                            invisible="state == 'draft'"
+                            class="btn-secondary"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="room_id"/>
+                            <field name="user_id"/>
+                            <field name="purpose"/>
+                            <field name="attendees"/>
+                        </group>
+                        <group>
+                            <field name="start_datetime"/>
+                            <field name="end_datetime"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Additional Information">
+                            <group>
+                                <field name="notes" nolabel="1" placeholder="Add any additional notes or requirements..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Calendar View -->
+    <record id="view_space_booking_calendar" model="ir.ui.view">
+        <field name="name">facilities.space.booking.calendar</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <calendar string="Space Booking Calendar"
+                      date_start="start_datetime"
+                      date_stop="end_datetime"
+                      color="room_id">
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="state"/>
+                <field name="purpose"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_space_booking" model="ir.actions.act_window">
+        <field name="name">Space Bookings</field>
+        <field name="res_model">facilities.space.booking</field>
+        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="search_view_id" ref="view_space_booking_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No space bookings yet!
+            </p>
+            <p>
+                Book rooms and spaces for meetings, events, or resources.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_space_booking"
+              name="Space Booking"
+              parent="menu_facilities_root"
+              sequence="60"/>
+
+    <menuitem id="menu_space_booking_operations"
+              name="Bookings"
+              parent="menu_space_booking"
+              action="action_space_booking"
+              sequence="10"/>
+    <menuitem id="menu_space_booking_analytics"
+          name="Analytics"
+          parent="menu_space_booking"
+          action="action_space_booking_analytics"
+          sequence="20"/>
+
+    <!-- Data: Sequence for booking reference -->
+    <record id="seq_space_booking" model="ir.sequence">
+        <field name="name">Space Booking</field>
+        <field name="code">facilities.space.booking</field>
+        <field name="prefix">SB</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- Mail Template -->
+    <record id="mail_template_space_booking_confirmed" model="mail.template">
+        <field name="name">Space Booking Confirmation</field>
+        <field name="model_id" ref="model_facilities_space_booking"/>
+        <field name="subject">Space Booking Confirmed - ${object.name}</field>
+        <field name="body_html"><![CDATA[
+            <div style="margin: 0px; padding: 0px;">
+                <p>Dear ${object.user_id.name},</p>
+                <p>Your space booking has been confirmed with the following details:</p>
+                <ul>
+                    <li><strong>Booking Reference:</strong> ${object.name}</li>
+                    <li><strong>Room:</strong> ${object.room_id.name}</li>
+                    <li><strong>Start Time:</strong> ${object.start_datetime}</li>
+                    <li><strong>End Time:</strong> ${object.end_datetime}</li>
+                    % if object.purpose:
+                    <li><strong>Purpose:</strong> ${object.purpose}</li>
+                    % endif
+                    % if object.attendees:
+                    <li><strong>Attendees:</strong> ${object.attendees}</li>
+                    % endif
+                </ul>
+                % if object.notes:
+                <p><strong>Additional Notes:</strong></p>
+                <p>${object.notes}</p>
+                % endif
+                <p>Thank you for using our facilities booking system.</p>
+                <p>Best regards,<br/>Facilities Management Team</p>
+            </div>
+        ]]></field>
+        <field name="email_to">${object.user_id.email}</field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+</odoo>

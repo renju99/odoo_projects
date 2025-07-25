@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Tree View for Analytics -->
+    <record id="view_space_booking_tree_analytics" model="ir.ui.view">
+        <field name="name">facilities.space.booking.tree.analytics</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="attendees"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="view_space_booking_pivot" model="ir.ui.view">
+        <field name="name">facilities.space.booking.pivot</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <pivot string="Booking Analytics">
+                <field name="room_id" type="row"/>
+                <field name="user_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="attendees" type="measure"/>
+                <field name="start_datetime" interval="month" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph View: Bookings per Room -->
+    <record id="view_space_booking_graph" model="ir.ui.view">
+        <field name="name">facilities.space.booking.graph</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <graph string="Bookings per Room" type="bar">
+                <field name="room_id" type="row"/>
+                <field name="user_id" type="row"/>
+                <field name="attendees" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Calendar View: Upcoming Bookings -->
+    <record id="view_space_booking_calendar_analytics" model="ir.ui.view">
+        <field name="name">facilities.space.booking.calendar.analytics</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <calendar string="Upcoming Bookings"
+                      date_start="start_datetime"
+                      date_stop="end_datetime"
+                      color="room_id">
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Analytics Action (must come after all referenced views) -->
+    <record id="action_space_booking_analytics" model="ir.actions.act_window">
+    <field name="name">Space Booking Analytics</field>
+    <field name="res_model">facilities.space.booking</field>
+    <field name="view_mode">pivot,graph,calendar,tree</field>
+    <field name="views" eval="[
+        (ref('view_space_booking_pivot'), 'pivot'),
+        (ref('view_space_booking_graph'), 'graph'),
+        (ref('view_space_booking_calendar_analytics'), 'calendar'),
+        (ref('view_space_booking_tree_analytics'), 'tree')
+    ]"/>
+    <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+            No booking analytics yet!
+        </p>
+        <p>
+            Analyze bookings and utilization trends here.
+        </p>
+    </field>
+</record>
+
+</odoo>
