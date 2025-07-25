@@ -23,6 +23,7 @@ from . import facility
 from . import asset_category
 from . import asset
 from . import workorder_permit
+from . import space_booking
 
 # 3. Asset Performance (depends on asset)
 from . import asset_performance

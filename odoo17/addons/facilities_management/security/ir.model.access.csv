@@ -28,3 +28,5 @@ access_monthly_building_report_wizard_user,monthly.building.report.wizard user,m
 access_monthly_building_report_wizard_manager,monthly.building.report.wizard manager,model_monthly_building_report_wizard,base.group_system,1,1,1,1
 access_maintenance_workorder_mobile_user,maintenance.workorder mobile user,model_maintenance_workorder,base.group_user,1,1,1,1
 access_maintenance_workorder_task_mobile_user,maintenance.workorder.task mobile user,model_maintenance_workorder_task,base.group_user,1,1,1,1
+access_space_booking_user,access_space_booking_user,model_facilities_space_booking,base.group_user,1,1,1,1
+access_space_booking_manager,access_space_booking_manager,model_facilities_space_booking,base.group_system,1,1,1,1
