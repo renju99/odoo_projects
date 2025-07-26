@@ -1,75 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-
-    <!-- Search View -->
+    <!-- Enhanced Search View -->
     <record id="view_space_booking_search" model="ir.ui.view">
         <field name="name">facilities.space.booking.search</field>
         <field name="model">facilities.space.booking</field>
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="booking_type"/>
+                <field name="department_id"/>
+                <field name="contact_email"/>
+                <field name="state"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+
+                <separator/>
+
+                <filter name="my_bookings" string="My Bookings"
+                        domain="[('user_id', '=', uid)]"/>
+                <filter name="today" string="Today"
+                        domain="[('start_datetime', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0))),
+                                 ('start_datetime', '&lt;', datetime.datetime.combine(context_today() + datetime.timedelta(days=1), datetime.time(0,0,0)))]"/>
+                <filter name="recurring" string="Recurring"
+                        domain="[('is_recurring', '=', True)]"/>
+                <filter name="external_guests" string="With External Guests"
+                        domain="[('is_external_guest', '=', True)]"/>
+
+                <separator/>
+
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="pending" string="Pending" domain="[('state', '=', 'pending')]"/>
+                <filter name="confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter name="cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
+
+                <separator/>
+
+                <filter name="meetings" string="Meetings" domain="[('booking_type', '=', 'meeting')]"/>
+                <filter name="events" string="Events" domain="[('booking_type', '=', 'event')]"/>
+                <filter name="maintenance" string="Maintenance" domain="[('booking_type', '=', 'maintenance')]"/>
+
+                <group expand="0" string="Group By">
+                    <filter name="group_room" string="Room" context="{'group_by': 'room_id'}"/>
+                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_type" string="Booking Type" context="{'group_by': 'booking_type'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
             </search>
         </field>
     </record>
 
-    <!-- Tree View -->
+    <!-- Enhanced Tree View -->
     <record id="view_space_booking_tree" model="ir.ui.view">
         <field name="name">facilities.space.booking.tree</field>
         <field name="model">facilities.space.booking</field>
         <field name="arch" type="xml">
-            <tree decoration-info="state=='draft'" decoration-success="state=='confirmed'" decoration-muted="state=='cancelled'">
+            <tree decoration-info="state=='draft'"
+                  decoration-success="state=='confirmed'"
+                  decoration-muted="state=='cancelled'"
+                  decoration-warning="state=='pending'">
                 <field name="name"/>
                 <field name="room_id"/>
                 <field name="user_id"/>
+                <field name="booking_type"/>
+                <field name="department_id" optional="hide"/>
+                <field name="contact_email" optional="hide"/>
                 <field name="start_datetime"/>
                 <field name="end_datetime"/>
-                <field name="purpose"/>
-                <field name="attendees"/>
+                <field name="duration_hours" widget="float_time" optional="hide"/>
+                <field name="purpose" optional="hide"/>
+                <field name="attendees" optional="hide"/>
+                <field name="is_recurring" optional="hide"/>
+                <field name="is_external_guest" optional="hide"/>
                 <field name="state"/>
             </tree>
         </field>
     </record>
 
-    <!-- Kanban View -->
-    <record id="view_space_booking_kanban" model="ir.ui.view">
-        <field name="name">facilities.space.booking.kanban</field>
-        <field name="model">facilities.space.booking</field>
-        <field name="arch" type="xml">
-            <kanban default_group_by="state">
-                <field name="name"/>
-                <field name="room_id"/>
-                <field name="user_id"/>
-                <field name="start_datetime"/>
-                <field name="end_datetime"/>
-                <field name="state"/>
-                <field name="purpose"/>
-                <field name="attendees"/>
-                <templates>
-                    <t t-name="kanban-box">
-                        <div class="oe_kanban_card oe_kanban_global_click">
-                            <div class="o_kanban_record_top">
-                                <strong><field name="name"/></strong>
-                            </div>
-                            <div class="o_kanban_record_body">
-                                <div>Room: <field name="room_id"/></div>
-                                <div>User: <field name="user_id"/></div>
-                                <div t-if="record.purpose.raw_value">Purpose: <field name="purpose"/></div>
-                                <div t-if="record.attendees.raw_value">Attendees: <field name="attendees"/></div>
-                                <div>
-                                    <field name="start_datetime"/> - <field name="end_datetime"/>
-                                </div>
-                            </div>
-                            <div class="o_kanban_record_bottom">
-                                <span>Status: <field name="state"/></span>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
-        </field>
-    </record>
-
-    <!-- Form View -->
+    <!-- Enhanced Form View -->
     <record id="view_space_booking_form" model="ir.ui.view">
         <field name="name">facilities.space.booking.form</field>
         <field name="model">facilities.space.booking</field>
@@ -77,7 +87,7 @@
             <form string="Space Booking">
                 <header>
                     <button name="action_confirm" type="object" string="Confirm"
-                            invisible="state != 'draft'"
+                            invisible="state not in ('draft','pending')"
                             class="btn-primary"/>
                     <button name="action_cancel" type="object" string="Cancel"
                             invisible="state == 'cancelled'"
@@ -85,7 +95,10 @@
                     <button name="action_draft" type="object" string="Set to Draft"
                             invisible="state == 'draft'"
                             class="btn-secondary"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                    <button name="action_create_recurring_bookings" type="object" string="Create Recurring"
+                            invisible="not is_recurring or state != 'confirmed'"
+                            class="btn-info"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pending,confirmed"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -93,22 +106,51 @@
                             <field name="name" readonly="1"/>
                         </h1>
                     </div>
-                    <group>
-                        <group>
+
+                    <group string="General Information">
+                        <group name="booking_details">
                             <field name="room_id"/>
                             <field name="user_id"/>
+                            <field name="booking_type"/>
+                            <field name="department_id" required="booking_type == 'event'"/>
+                            <field name="contact_email"/>
                             <field name="purpose"/>
                             <field name="attendees"/>
                         </group>
-                        <group>
+                        <group name="status_info">
+                            <field name="duration_hours" widget="float_time"/>
+                            <field name="is_holiday_conflict" readonly="1" invisible="not is_holiday_conflict"/>
+                        </group>
+                    </group>
+
+                    <group string="Timing">
+                        <group name="schedule">
                             <field name="start_datetime"/>
                             <field name="end_datetime"/>
                         </group>
+                        <group name="recurrence_info">
+                            <field name="is_recurring"/>
+                            <field name="recurrence_rule" invisible="not is_recurring" placeholder="e.g., FREQ=WEEKLY;BYDAY=MO,WE,FR"/>
+                            <field name="recurring_display" readonly="1" invisible="not is_recurring"/>
+                        </group>
                     </group>
+
                     <notebook>
-                        <page string="Additional Information">
+                        <page string="Guests" name="guests">
                             <group>
-                                <field name="notes" nolabel="1" placeholder="Add any additional notes or requirements..."/>
+                                <field name="is_external_guest"/>
+                                <field name="external_guest_names" invisible="not is_external_guest"
+                                       placeholder="Enter external guest names, one per line"/>
+                            </group>
+                        </page>
+
+                        <page string="Attachments" name="attachments">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+
+                        <page string="Additional Information" name="additional_info">
+                            <group>
+                                <field name="notes" nolabel="1" placeholder="Add any additional notes..."/>
                             </group>
                         </page>
                     </notebook>
@@ -122,7 +164,57 @@
         </field>
     </record>
 
-    <!-- Calendar View -->
+    <!-- Enhanced Kanban View -->
+    <record id="view_space_booking_kanban" model="ir.ui.view">
+        <field name="name">facilities.space.booking.kanban</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="user_id"/>
+                <field name="booking_type"/>
+                <field name="department_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="state"/>
+                <field name="purpose"/>
+                <field name="attendees"/>
+                <field name="is_recurring"/>
+                <field name="is_external_guest"/>
+                <field name="contact_email"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                                <span t-if="record.booking_type.raw_value" class="badge badge-info">
+                                    <field name="booking_type"/>
+                                </span>
+                                <span t-if="record.is_recurring.raw_value" class="badge badge-secondary ml-1" title="Recurring">
+                                    Recurring
+                                </span>
+                                <span t-if="record.is_external_guest.raw_value" class="badge badge-warning ml-1" title="External Guests">
+                                    External
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div>Room: <field name="room_id"/></div>
+                                <div>User: <field name="user_id"/></div>
+                                <div t-if="record.department_id.raw_value">Dept: <field name="department_id"/></div>
+                                <div t-if="record.contact_email.raw_value">Email: <field name="contact_email"/></div>
+                                <div><field name="start_datetime"/> - <field name="end_datetime"/></div>
+                                <div t-if="record.purpose.raw_value">Purpose: <field name="purpose"/></div>
+                                <div t-if="record.attendees.raw_value">Attendees: <field name="attendees"/></div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Enhanced Calendar View -->
     <record id="view_space_booking_calendar" model="ir.ui.view">
         <field name="name">facilities.space.booking.calendar</field>
         <field name="model">facilities.space.booking</field>
@@ -130,28 +222,91 @@
             <calendar string="Space Booking Calendar"
                       date_start="start_datetime"
                       date_stop="end_datetime"
-                      color="room_id">
+                      color="booking_type">
                 <field name="name"/>
                 <field name="room_id"/>
                 <field name="user_id"/>
                 <field name="state"/>
                 <field name="purpose"/>
+                <field name="booking_type"/>
+                <field name="department_id"/>
+                <field name="is_recurring"/>
+                <field name="is_external_guest"/>
+                <field name="contact_email"/>
             </calendar>
         </field>
     </record>
 
-    <!-- Action -->
+    <!-- Graph View -->
+    <record id="view_space_booking_graph" model="ir.ui.view">
+        <field name="name">facilities.space.booking.graph</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <graph string="Booking Analysis" type="bar">
+                <field name="booking_type" type="row"/>
+                <field name="state" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="view_space_booking_pivot" model="ir.ui.view">
+        <field name="name">facilities.space.booking.pivot</field>
+        <field name="model">facilities.space.booking</field>
+        <field name="arch" type="xml">
+            <pivot string="Booking Analysis">
+                <field name="booking_type" type="row"/>
+                <field name="department_id" type="row"/>
+                <field name="start_datetime" type="col" interval="month"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Enhanced Action -->
     <record id="action_space_booking" model="ir.actions.act_window">
         <field name="name">Space Bookings</field>
         <field name="res_model">facilities.space.booking</field>
-        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="view_mode">kanban,tree,form,calendar,graph,pivot</field>
         <field name="search_view_id" ref="view_space_booking_search"/>
+        <field name="context">{'search_default_confirmed': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No space bookings yet!
             </p>
             <p>
-                Book rooms and spaces for meetings, events, or resources.
+                Book rooms and spaces for meetings, events, maintenance, or other purposes.
+            </p>
+        </field>
+    </record>
+
+    <!-- My Bookings Action -->
+    <record id="action_my_space_bookings" model="ir.actions.act_window">
+        <field name="name">My Bookings</field>
+        <field name="res_model">facilities.space.booking</field>
+        <field name="view_mode">kanban,tree,form,calendar</field>
+        <field name="search_view_id" ref="view_space_booking_search"/>
+        <field name="context">{'search_default_my_bookings': 1}</field>
+        <field name="domain">[('user_id', '=', uid)]</field>
+    </record>
+
+    <!-- Pending Approvals Action -->
+    <record id="action_pending_booking_approvals" model="ir.actions.act_window">
+        <field name="name">Pending Approvals</field>
+        <field name="res_model">facilities.space.booking</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_space_booking_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="domain">[('state', '=', 'pending'), ('booking_type', '=', 'event')]</field>
+    </record>
+
+    <!-- Analytics Action -->
+    <record id="action_space_booking_analytics" model="ir.actions.act_window">
+        <field name="name">Booking Analytics</field>
+        <field name="res_model">facilities.space.booking</field>
+        <field name="view_mode">graph,pivot</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_neutral_face">
+                No booking data to analyze yet.
             </p>
         </field>
     </record>
@@ -163,55 +318,132 @@
               sequence="60"/>
 
     <menuitem id="menu_space_booking_operations"
-              name="Bookings"
+              name="All Bookings"
               parent="menu_space_booking"
               action="action_space_booking"
               sequence="10"/>
-    <menuitem id="menu_space_booking_analytics"
-          name="Analytics"
-          parent="menu_space_booking"
-          action="action_space_booking_analytics"
-          sequence="20"/>
 
-    <!-- Data: Sequence for booking reference -->
+    <menuitem id="menu_my_space_bookings"
+              name="My Bookings"
+              parent="menu_space_booking"
+              action="action_my_space_bookings"
+              sequence="15"/>
+
+    <menuitem id="menu_pending_approvals"
+              name="Pending Approvals"
+              parent="menu_space_booking"
+              action="action_pending_booking_approvals"
+              sequence="20"/>
+
+    <menuitem id="menu_space_booking_analytics"
+              name="Analytics"
+              parent="menu_space_booking"
+              action="action_space_booking_analytics"
+              sequence="30"/>
+
+    <!-- Data: Enhanced Sequence -->
     <record id="seq_space_booking" model="ir.sequence">
         <field name="name">Space Booking</field>
         <field name="code">facilities.space.booking</field>
-        <field name="prefix">SB</field>
-        <field name="padding">5</field>
+        <field name="prefix">SB-</field>
+        <field name="padding">4</field>
         <field name="company_id" eval="False"/>
     </record>
 
-    <!-- Mail Template -->
+    <!-- Enhanced Mail Template -->
     <record id="mail_template_space_booking_confirmed" model="mail.template">
         <field name="name">Space Booking Confirmation</field>
         <field name="model_id" ref="model_facilities_space_booking"/>
         <field name="subject">Space Booking Confirmed - ${object.name}</field>
+        <field name="email_to">${object.contact_email or object.user_id.email}</field>
         <field name="body_html"><![CDATA[
-            <div style="margin: 0px; padding: 0px;">
-                <p>Dear ${object.user_id.name},</p>
-                <p>Your space booking has been confirmed with the following details:</p>
-                <ul>
-                    <li><strong>Booking Reference:</strong> ${object.name}</li>
-                    <li><strong>Room:</strong> ${object.room_id.name}</li>
-                    <li><strong>Start Time:</strong> ${object.start_datetime}</li>
-                    <li><strong>End Time:</strong> ${object.end_datetime}</li>
-                    % if object.purpose:
-                    <li><strong>Purpose:</strong> ${object.purpose}</li>
+            <div style="margin: 0px; padding: 0px; font-family: Arial, sans-serif;">
+                <div style="background-color: #f8f9fa; padding: 20px;">
+                    <h2 style="color: #28a745; margin-bottom: 20px;">Booking Confirmed</h2>
+                </div>
+
+                <div style="padding: 20px;">
+                    <p>Dear ${object.user_id.name},</p>
+                    <p>Your space booking has been confirmed with the following details:</p>
+
+                    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Booking Reference:</td>
+                                <td style="padding: 8px;">${object.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Room:</td>
+                                <td style="padding: 8px;">${object.room_id.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Start Time:</td>
+                                <td style="padding: 8px;">${object.start_datetime}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">End Time:</td>
+                                <td style="padding: 8px;">${object.end_datetime}</td>
+                            </tr>
+                            % if object.purpose:
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Purpose:</td>
+                                <td style="padding: 8px;">${object.purpose}</td>
+                            </tr>
+                            % endif
+                            % if object.attendees:
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Attendees:</td>
+                                <td style="padding: 8px;">${object.attendees}</td>
+                            </tr>
+                            % endif
+                            % if object.booking_type:
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Booking Type:</td>
+                                <td style="padding: 8px;">${object.booking_type}</td>
+                            </tr>
+                            % endif
+                            % if object.department_id:
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Department:</td>
+                                <td style="padding: 8px;">${object.department_id.name}</td>
+                            </tr>
+                            % endif
+                            % if object.contact_email:
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold;">Contact Email:</td>
+                                <td style="padding: 8px;">${object.contact_email}</td>
+                            </tr>
+                            % endif
+                        </table>
+                    </div>
+
+                    % if object.is_recurring:
+                    <div style="background-color: #e7f3ff; padding: 10px; border-radius: 5px; margin: 15px 0;">
+                        <p style="margin: 0;"><strong>Recurring Booking:</strong> ${object.recurring_display}</p>
+                    </div>
                     % endif
-                    % if object.attendees:
-                    <li><strong>Attendees:</strong> ${object.attendees}</li>
+
+                    % if object.is_external_guest and object.external_guest_names:
+                    <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin: 15px 0;">
+                        <p style="margin: 0; font-weight: bold;">External Guests:</p>
+                        <p style="margin: 5px 0 0 0;">${object.external_guest_names}</p>
+                    </div>
                     % endif
-                </ul>
-                % if object.notes:
-                <p><strong>Additional Notes:</strong></p>
-                <p>${object.notes}</p>
-                % endif
-                <p>Thank you for using our facilities booking system.</p>
-                <p>Best regards,<br/>Facilities Management Team</p>
+
+                    % if object.notes:
+                    <div style="margin: 20px 0;">
+                        <p><strong>Additional Notes:</strong></p>
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                            <p style="margin: 0;">${object.notes}</p>
+                        </div>
+                    </div>
+                    % endif
+
+                    <p style="margin-top: 30px;">Thank you for using our facilities booking system.</p>
+                    <p>Best regards,<br/>Facilities Management Team</p>
+                </div>
             </div>
         ]]></field>
-        <field name="email_to">${object.user_id.email}</field>
         <field name="auto_delete" eval="True"/>
     </record>
 

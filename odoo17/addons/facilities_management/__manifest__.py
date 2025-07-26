@@ -38,7 +38,7 @@ Features:
         'data/maintenance_cron.xml',
         'data/predictive_parameters.xml',
         'data/space_booking_mail_template.xml',
-
+        'data/space_booking_data.xml',
         # Reports
         'reports/maintenance_report.xml',
         'reports/monthly_building_report_pdf.xml',
