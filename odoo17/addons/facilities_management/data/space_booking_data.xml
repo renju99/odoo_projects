@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- System Parameters for Booking Configuration -->
+        <record id="booking_reminder_hours" model="ir.config_parameter">
+            <field name="key">facilities.booking.reminder_hours</field>
+            <field name="value">24</field>
+        </record>
+
+        <record id="booking_max_duration_hours" model="ir.config_parameter">
+            <field name="key">facilities.booking.max_duration_hours</field>
+            <field name="value">8</field>
+        </record>
+
+        <record id="booking_advance_days" model="ir.config_parameter">
+            <field name="key">facilities.booking.advance_booking_days</field>
+            <field name="value">30</field>
+        </record>
+
+        <!-- Enhanced Email Templates -->
+        <record id="mail_template_space_booking_cancelled" model="mail.template">
+            <field name="name">Space Booking Cancellation</field>
+            <field name="model_id" ref="model_facilities_space_booking"/>
+            <field name="subject">Booking Cancelled - ${object.name}</field>
+            <field name="email_to">${object.contact_email or object.user_id.email}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0px; padding: 0px; font-family: Arial, sans-serif;">
+                    <div style="background-color: #f8d7da; padding: 20px;">
+                        <h2 style="color: #721c24; margin-bottom: 20px;">
+                            <i class="fa fa-times-circle"></i> Booking Cancelled
+                        </h2>
+                    </div>
+
+                    <div style="padding: 20px;">
+                        <p>Dear ${object.user_id.name},</p>
+                        <p>Your space booking has been cancelled:</p>
+
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <p><strong>Booking Reference:</strong> ${object.name}</p>
+                            <p><strong>Room:</strong> ${object.room_id.name}</p>
+                            <p><strong>Original Time:</strong> ${format_datetime(object.start_datetime, tz=user.tz, dt_format='medium')} - ${format_datetime(object.end_datetime, tz=user.tz, dt_format='medium')}</p>
+                        </div>
+
+                        <p>If you have any questions, please contact the facilities management team.</p>
+                        <p>Best regards,<br/>Facilities Management Team</p>
+                    </div>
+                </div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <record id="mail_template_space_booking_reminder" model="mail.template">
+            <field name="name">Space Booking Reminder</field>
+            <field name="model_id" ref="model_facilities_space_booking"/>
+            <field name="subject">Booking Reminder - ${object.name} Tomorrow</field>
+            <field name="email_to">${object.contact_email or object.user_id.email}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0px; padding: 0px; font-family: Arial, sans-serif;">
+                    <div style="background-color: #fff3cd; padding: 20px;">
+                        <h2 style="color: #856404; margin-bottom: 20px;">
+                            <i class="fa fa-bell"></i> Booking Reminder
+                        </h2>
+                    </div>
+
+                    <div style="padding: 20px;">
+                        <p>Dear ${object.user_id.name},</p>
+                        <p>This is a friendly reminder that you have a space booking scheduled for tomorrow:</p>
+
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h3 style="margin-top: 0;">${object.name}</h3>
+                            <p><strong>Room:</strong> ${object.room_id.name}</p>
+                            <p><strong>Time:</strong> ${format_datetime(object.start_datetime, tz=user.tz, dt_format='medium')} - ${format_datetime(object.end_datetime, tz=user.tz, dt_format='medium')}</p>
+                            % if object.purpose:
+                            <p><strong>Purpose:</strong> ${object.purpose}</p>
+                            % endif
+                        </div>
+
+                        <p>Please make sure you're prepared and arrive on time.</p>
+                        <p>Best regards,<br/>Facilities Management Team</p>
+                    </div>
+                </div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+    </data>
+</odoo>
